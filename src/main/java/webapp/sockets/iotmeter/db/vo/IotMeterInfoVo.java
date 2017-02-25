@@ -19,7 +19,7 @@ public class IotMeterInfoVo {
     private int clientPort;
 
     /** 最后登录日期 */
-    private Date lastOnlineDate;
+    private String lastOnlineDate;
 
     public String getId() {
         return id;
@@ -53,11 +53,11 @@ public class IotMeterInfoVo {
         this.clientPort = clientPort;
     }
 
-    public Date getLastOnlineDate() {
+    public String getLastOnlineDate() {
         return lastOnlineDate;
     }
 
-    public void setLastOnlineDate(Date lastOnlineDate) {
+    public void setLastOnlineDate(String lastOnlineDate) {
         this.lastOnlineDate = lastOnlineDate;
     }
 }

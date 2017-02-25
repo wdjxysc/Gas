@@ -17,116 +17,165 @@
 
     <script>
         var xmlhttp;
-        if (window.XMLHttpRequest) {
-            //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
-            xmlhttp = new XMLHttpRequest();
-        } else {
-            // IE6, IE5 浏览器执行代码
-            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-        }
+
+
+        $(document).ready(function () {
+            if (window.XMLHttpRequest) {
+                //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+                xmlhttp = new XMLHttpRequest();
+            } else {
+                // IE6, IE5 浏览器执行代码
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+
+            refreshMeterList();
+        });
 
         function readMeter(obj) {
             var parent = obj.parentNode.parentNode;
-            var child = parent.getElementsByClassName('index');
+            var child = parent.getElementsByClassName('meter-id')[0];
             console.log(child);
-            child.innerHTML = 'asfsadf';
+            var meterId = child.innerText;
             xmlhttp.onreadystatechange = function () {
                 if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                    var resultJson = xmlhttp.responseText;
+                    let resultJson = xmlhttp.responseText;
+                    alert(resultJson);
                     console.log(resultJson);
                 }
             };
 
-            xmlhttp.open("GET", "http://localhost:8080/socket/read?meterId=" + "23061509000001", true);
+            xmlhttp.open("GET", "http://localhost:8080/socket/read?meterId=" + meterId, true);
             xmlhttp.send();
         }
 
-        function addMeter(meters) {
-            for (var i = 0; i < meters.length; i++) {
-
-            }
-        }
-
-
-        function hehe() {
-            let tbody = document.getElementById('meterlist').getElementsByTagName('tbody')[0];
-
-            console.log(tbody);
-
-            let list = tbody.getElementsByTagName('tr');
-
-            for (let i = list.length - 1; i >= 0; i--) {
-                let item = list[i];
-                if (item.className == 'list-item') {
-                    tbody.removeChild(item);
-                    console.log('remove item----' + item.getElementsByTagName('td')[0].innerHTML)
+        function openValve(obj) {
+            var parent = obj.parentNode.parentNode;
+            var child = parent.getElementsByClassName('meter-id')[0];
+            console.log(child);
+            var meterId = child.innerText;
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    let resultJson = xmlhttp.responseText;
+                    alert(resultJson);
+                    console.log(resultJson);
                 }
-            }
+            };
+
+            xmlhttp.open("GET", "http://localhost:8080/socket/open?meterId=" + meterId, true);
+            xmlhttp.send();
         }
 
+        function closeValve(obj) {
+            var parent = obj.parentNode.parentNode;
+            var child = parent.getElementsByClassName('meter-id')[0];
+            console.log(child);
+            var meterId = child.innerText;
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    let resultJson = xmlhttp.responseText;
+                    alert(resultJson);
+                    console.log(resultJson);
+                }
+            };
+
+            xmlhttp.open("GET", "http://localhost:8080/socket/close?meterId=" + meterId, true);
+            xmlhttp.send();
+        }
+
+
+        let meterList;
         function refreshMeterList() {
             //删除除第一行外的所有行
             $("#meter-list").find("tr:not(:first)").remove(".list-item");
+            rowCount = 0;
 
             xmlhttp.onreadystatechange = function () {
                 if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                    var resultJson = xmlhttp.responseText;
-                    console.log(resultJson);
+                    let resultJson = JSON.parse(xmlhttp.responseText);
+                    meterList = resultJson.data;
+                    console.log(resultJson.data);
+                    for (let i = 0;i<meterList.length;i++){
+                        let meter = meterList[i];
+                        console.log(meter.meterId);
+                        addRow(meter);
+                    }
                 }
             };
 
-            xmlhttp.open("GET", "http://localhost:8080/socket/read?meterId=" + "23061509000001", true);
+            xmlhttp.open("GET", "http://localhost:8080/meter/list", true);
             xmlhttp.send();
         }
 
+        let rowCount = 0;
+        //添加行
+        function addRow(meter) {
+            rowCount++;
+            let online = "离线";
+            if(meter.online == true){
+                online = "在线";
+            }
+
+            let newRow = '<tr class="list-item">' +
+                '<td class="index" style="text-align: center">' + rowCount + '</td>' +
+                '<td class="meter-id" style="text-align: center" >' + meter.meterId + '</td>' +
+                '<td style="align-content: center"> <input class="btn btn-primary" type="button" value="抄表" onclick="readMeter(this)">' +
+                '<input class="btn btn-primary" type="button" value="开阀" onclick="openValve(this)">' +
+                '<input class="btn btn-primary" type="button" value="关阀" onclick="closeValve(this)"></td>' +
+                '<td class="online" style="text-align: center" >' + online + '</td>' +
+                '</tr>';
+            $('#meter-list').append(newRow);
+        }
+
+
+
     </script>
 
+    <button class="btn btn-success" type="button" style="width: 100%"  onclick="refreshMeterList()">刷新</button>
     <table class="reference" id="meter-list">
-        <tbody id="hehe">
         <tr>
-            <th align="left">序号</th>
-            <th align="left">表号</th>
-            <th align="left">操作</th>
+            <th style="text-align: center">序号</th>
+            <th style="text-align: center">表号</th>
+            <th style="text-align: center">操作</th>
+            <th style="text-align: center">在线状态</th>
         </tr>
         <tr class="list-item">
             <td class="index">1</td>
-            <td class="meterid">23061509000001</td>
+            <td class="meter-id">23061509000001</td>
             <td>
                 <input class="btn btn-primary" type="button" value="抄表" onclick="readMeter(this)">
-                <input class="btn btn-primary" type="button" value="开阀" onclick="refreshMeterList()">
-                <input class="btn btn-primary" type="button" value="关阀">
+                <input class="btn btn-primary" type="button" value="开阀" onclick="openValve()">
+                <input class="btn btn-primary" type="button" value="关阀" onclick="closeValve()">
             </td>
         </tr>
         <tr class="list-item">
             <td>2</td>
-            <td>23061509000001</td>
+            <td>23061509000002</td>
             <td>
                 <input class="btn btn-primary" type="button" value="抄表">
                 <input class="btn btn-primary" type="button" value="开阀">
                 <input class="btn btn-primary" type="button" value="关阀">
             </td>
         </tr>
-        <tr class="list-item1">
+        <tr class="list-item">
             <td>3</td>
-            <td>23061509000001</td>
+            <td>23061509000003</td>
             <td>
                 <input class="btn btn-primary" type="button" value="抄表">
                 <input class="btn btn-primary" type="button" value="开阀">
                 <input class="btn btn-primary" type="button" value="关阀">
             </td>
         </tr>
-        <tr class="list-item1">
+        <tr class="list-item">
             <td>4</td>
-            <td>23061509000001</td>
+            <td>23061509000004</td>
             <td>
                 <input class="btn btn-primary" type="button" value="抄表">
                 <input class="btn btn-primary" type="button" value="开阀">
                 <input class="btn btn-primary" type="button" value="关阀">
             </td>
         </tr>
-        </tbody>
     </table>
-    <button class="btn btn-group" onclick="refreshMeterList()">刷新</button>
+
 </div>
 </body>
 

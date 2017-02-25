@@ -1,6 +1,7 @@
 package webapp.servlet;
 
 
+import com.alibaba.fastjson.JSON;
 import webapp.sockets.iotmeter.IotMeterServer;
 import webapp.sockets.iotmeter.cmd.bean.MeterInfo;
 import webapp.sockets.iotmeter.frame.RequestIotMeter;
@@ -27,19 +28,9 @@ public class SocketServerServlet extends HttpServlet {
     String message = "夏末秋凉";
     @Override
     public void init() throws ServletException {
-        try {
-            iotMeterServer = new IotMeterServer();
+            iotMeterServer = IotMeterServer.getInstance();
 
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    iotMeterServer.startServer();
-                }
-            }).start();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            new Thread(() -> iotMeterServer.startServer()).start();
 
         MeterInfo meterInfo = new MeterInfo();
         meterInfo.setMeterId("dsaffasdfaf");
@@ -71,14 +62,13 @@ public class SocketServerServlet extends HttpServlet {
                     resultMap = readMeterByMeterId(map.get("meterId")[0]);
                     break;
                 case "open":
-                    resultMap = readMeterByMeterId(map.get("meterId")[0]);
+                    resultMap = openMeterValveByMeterId(map.get("meterId")[0]);
                     break;
                 case "close":
-                    resultMap = readMeterByMeterId(map.get("meterId")[0]);
+                    resultMap = closeMeterValveByMeterId(map.get("meterId")[0]);
                     break;
             }
         }
-
 
 
         //设置响应内容类型
@@ -88,7 +78,7 @@ public class SocketServerServlet extends HttpServlet {
 
         //设置逻辑实现
         PrintWriter out = response.getWriter();
-        out.println(resultMap);
+        out.println(JSON.toJSONString(resultMap));
     }
 
     private HashMap<String,Object> readMeterByMeterId(String meterId){
@@ -96,6 +86,9 @@ public class SocketServerServlet extends HttpServlet {
         HashMap map = requestIotMeter.readMeter(meterId);
         HashMap<String,Object> result = new HashMap<>();
         result.put("success", map.get(ResponderIotMeter.KEY_SUCCESS));
+        if(!(boolean)map.get(ResponderIotMeter.KEY_SUCCESS)){
+            result.put("err_msg",map.get(ResponderIotMeter.KEY_ERR_MESSAGE));
+        }
         return result;
     }
 
@@ -104,6 +97,10 @@ public class SocketServerServlet extends HttpServlet {
         HashMap map = requestIotMeter.openMeterValve(meterId);
         HashMap<String,Object> result = new HashMap<>();
         result.put("success", map.get(ResponderIotMeter.KEY_SUCCESS));
+        if(!(boolean)map.get(ResponderIotMeter.KEY_SUCCESS)){
+            result.put("err_msg",map.get(ResponderIotMeter.KEY_ERR_MESSAGE));
+        }
+
         return result;
     }
 
@@ -112,6 +109,9 @@ public class SocketServerServlet extends HttpServlet {
         HashMap map = requestIotMeter.closeMeterValve(meterId);
         HashMap<String,Object> result = new HashMap<>();
         result.put("success", map.get(ResponderIotMeter.KEY_SUCCESS));
+        if(!(boolean)map.get(ResponderIotMeter.KEY_SUCCESS)){
+            result.put("err_msg",map.get(ResponderIotMeter.KEY_ERR_MESSAGE));
+        }
         return result;
     }
 }

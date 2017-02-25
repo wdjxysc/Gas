@@ -37,14 +37,25 @@ public class IotMeterServer {
      */
     public static ArrayList<HashMap<String,Object>> onlineMeterMapList = new ArrayList<>();
 
-    public IotMeterServer() throws IOException {
+    private IotMeterServer() throws IOException {
         serverSocket = new ServerSocket(port);
         //返回cup数目
         int cupCount = Runtime.getRuntime().availableProcessors();
         log.info("CPU数目：" + cupCount);
         executorService = Executors.newFixedThreadPool(cupCount * POOL_SIZE);
         log.info("服务器已启动......");
+    }
 
+    private static IotMeterServer iotMeterServer;
+    public static IotMeterServer getInstance () {
+        if(iotMeterServer == null){
+            try {
+                iotMeterServer = new IotMeterServer();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return iotMeterServer;
     }
 
 
@@ -104,10 +115,10 @@ public class IotMeterServer {
      * @param meterId
      * @param socket
      */
-    public static void addMeterToOnlineList(String meterId, Socket socket){
-        for (int i = 0;i<onlineMeterMapList.size();i++){
-            if(onlineMeterMapList.get(i).get("MeterId").equals(meterId)){
-                onlineMeterMapList.get(i).put("Socket",socket);
+    static void addMeterToOnlineList(String meterId, Socket socket){
+        for (HashMap<String, Object> anOnlineMeterMapList : onlineMeterMapList) {
+            if (anOnlineMeterMapList.get("MeterId").equals(meterId)) {
+                anOnlineMeterMapList.put("Socket", socket);
                 return;
             }
         }
@@ -131,6 +142,17 @@ public class IotMeterServer {
                 return;
             }
         }
+    }
+
+
+    public boolean isMeterOnline(String meterId){
+        boolean b = false;
+        for (HashMap<String,Object> map:IotMeterServer.onlineMeterMapList){
+            if(map.get("MeterId").equals(meterId)){
+                return true;
+            }
+        }
+        return b;
     }
 
 

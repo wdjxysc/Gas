@@ -64,7 +64,7 @@ public class RequestIotMeter implements Serializable {
             }
         }else {
             map.put(ResponderIotMeter.KEY_SUCCESS,false);
-            map.put(ResponderIotMeter.KEY_ERR_MESSAGE, "socket null");
+            map.put(ResponderIotMeter.KEY_ERR_MESSAGE, "meter offline");
         }
 
         return map;

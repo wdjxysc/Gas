@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 /**
  * Created by Administrator on 2017/2/21.
@@ -73,6 +74,69 @@ public class IotMeterInfoDao {
             }
         }
         return count;
+    }
+
+
+    /**
+     * 查询设备列表
+     * @return
+     * @throws Exception
+     */
+    public ArrayList<IotMeterInfoVo> queryIotMeter(){
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        int count = 0;
+
+        ArrayList<IotMeterInfoVo> arrayList = new ArrayList();
+        try{
+            StringBuffer sql = new StringBuffer();
+            sql.append("select * from iot_meter_info");
+            conn = pool.getConnection();
+            ps = conn.prepareStatement(sql.toString());
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                IotMeterInfoVo iotMeterInfoVo = new IotMeterInfoVo();
+                iotMeterInfoVo.setId(rs.getString(1));
+                iotMeterInfoVo.setMeterId(rs.getString(2));
+                iotMeterInfoVo.setClientIp(rs.getString(3));
+                iotMeterInfoVo.setClientPort(rs.getInt(4));
+                iotMeterInfoVo.setLastOnlineDate(TimeTag.getStringDate(rs.getDate(5)));
+                arrayList.add(iotMeterInfoVo);
+            }
+        }
+        catch(Exception e){
+            log.error(e);
+        }
+        finally{
+            try {
+                if (rs != null) {
+                    rs.close();
+                    rs = null;
+                }
+            } catch (SQLException e) {
+                log.error(e);
+            }
+            try {
+                if (ps != null) {
+                    ps.close();
+                    ps = null;
+                }
+            }
+            catch (SQLException e) {
+                log.error(e);
+            }
+            try {
+                if (conn != null) {
+                    pool.releaseConnection(conn);
+                    conn=null;
+                }
+            }
+            catch (SQLException e) {
+                log.error(e);
+            }
+        }
+        return arrayList;
     }
 
     /**
@@ -144,7 +208,7 @@ public class IotMeterInfoDao {
         try{
             conn = pool.getConnection();
             StringBuffer sql = new StringBuffer();
-            sql.append("update iot_meter_info set update_date = ?,ip=?,port=? where meter_id = ?");
+            sql.append("update iot_meter_info set last_connect_date = ?,ip=?,port=? where meter_id = ?");
             ps = conn.prepareStatement(sql.toString());
             ps.setString(1, TimeTag.getStringDate());
             ps.setString(2, vo.getClientIp());

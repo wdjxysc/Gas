@@ -3,4 +3,3 @@
  */
 
 
-var xmlhttp;
