@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 
 public class IotMeterServer {
     private static Logger log = Logger.getLogger(IotMeterServer.class);
-    private int port = 20007;
+    private int port = 19998;
     private ServerSocket serverSocket;
     private ExecutorService executorService;
     private final int POOL_SIZE = 10;

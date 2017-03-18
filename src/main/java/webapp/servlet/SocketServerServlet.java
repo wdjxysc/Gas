@@ -23,9 +23,8 @@ import java.util.Map;
 @WebServlet(name = "SocketServerServlet", loadOnStartup = 0, urlPatterns = "/socket/*")
 public class SocketServerServlet extends HttpServlet {
 
-    IotMeterServer iotMeterServer;
+    private IotMeterServer iotMeterServer;
 
-    String message = "夏末秋凉";
     @Override
     public void init() throws ServletException {
             iotMeterServer = IotMeterServer.getInstance();
@@ -34,7 +33,6 @@ public class SocketServerServlet extends HttpServlet {
 
         MeterInfo meterInfo = new MeterInfo();
         meterInfo.setMeterId("dsaffasdfaf");
-        message = "启动socket";
         System.out.println("启动");
         log("启动");
         super.init();
@@ -88,6 +86,11 @@ public class SocketServerServlet extends HttpServlet {
         result.put("success", map.get(ResponderIotMeter.KEY_SUCCESS));
         if(!(boolean)map.get(ResponderIotMeter.KEY_SUCCESS)){
             result.put("err_msg",map.get(ResponderIotMeter.KEY_ERR_MESSAGE));
+        }else {
+            result.put("meterId",map.get(ResponderIotMeter.KEY_METER_ID));
+            result.put("flow",map.get(ResponderIotMeter.KEY_METER_ID));
+            result.put("valveState",map.get(ResponderIotMeter.KEY_METER_ID));
+            result.put("dataTime",map.get(ResponderIotMeter.KEY_METER_ID));
         }
         return result;
     }

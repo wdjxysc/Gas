@@ -5,7 +5,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import webapp.sockets.iotmeter.IotMeterServer;
 import webapp.sockets.iotmeter.db.dao.IotMeterInfoDao;
+import webapp.sockets.iotmeter.db.dao.MeterDataDao;
 import webapp.sockets.iotmeter.db.vo.IotMeterInfoVo;
+import webapp.sockets.iotmeter.db.vo.MeterDataVo;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -35,10 +37,13 @@ public class MeterServlet extends HttpServlet {
             methodStr = strings[2];
         }
 
-
+        Map<String, String[]> map = request.getParameterMap();
         switch (methodStr) {
             case "list":
                 resultMap = getMeterList();
+                break;
+            case "data":
+                resultMap = getMeterData(map.get("meterid")[0]);
                 break;
         }
 
@@ -54,7 +59,7 @@ public class MeterServlet extends HttpServlet {
 
 
     /**
-     * 获取 表信息状态 包括表在线状态
+     * 查询 表信息状态 包括表在线状态
      *
      * @return
      */
@@ -85,4 +90,25 @@ public class MeterServlet extends HttpServlet {
         return map;
     }
 
+    /**
+     * 根据表号查询表数据
+     * @param meterId
+     * @return
+     */
+    private HashMap<String, Object> getMeterData(String meterId){
+        HashMap<String, Object> map = new HashMap<>();
+
+        MeterDataDao meterDataDao = new MeterDataDao();
+        ArrayList<MeterDataVo> meterDataVos = meterDataDao.queryMeterData(meterId);
+
+        ArrayList<HashMap<String, Object>> listMap = new ArrayList<>();
+        for (MeterDataVo vo : meterDataVos) {
+            listMap.add(JSON.parseObject(JSON.toJSONString(vo), new TypeReference<HashMap<String, Object>>() {
+            }));
+        }
+
+        map.put("success", true);
+        map.put("data", listMap);
+        return map;
+    }
 }

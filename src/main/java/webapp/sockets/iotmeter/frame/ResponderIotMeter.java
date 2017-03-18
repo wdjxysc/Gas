@@ -11,7 +11,9 @@ import webapp.sockets.iotmeter.db.vo.DeviceAnomalyVo;
 import webapp.sockets.iotmeter.db.vo.IotMeterInfoVo;
 import webapp.sockets.iotmeter.db.vo.MeterDataVo;
 import webapp.sockets.iotmeter.encode.RTHCDecoder;
+import webapp.sockets.iotmeter.field.DataField;
 import webapp.sockets.iotmeter.protocol.Protocol;
+import webapp.sockets.iotmeter.util.TimeTag;
 import webapp.sockets.iotmeter.util.Tools;
 
 import java.io.Serializable;
@@ -114,9 +116,13 @@ public class ResponderIotMeter implements Serializable {
         log.info("upResponseFrame(byte[] command) 方法开始处理...");
 
         RTHCDecoder decoder = RTHCDecoder.getInstance();
+        byte[] meterIdData = decoder.getSubStationIDByte(command);
+        String meterId = Tools.Bytes2HexString(meterIdData,meterIdData.length);
         byte[] cc = decoder.getControlCodeByte(command);
         String ccString = Protocol.getInstance().hexToHexString(cc);
         byte[] backCode = decoder.getResponseFlagByte(command);
+        DataField dataField = decoder.getDataField(command);
+        byte[] data = dataField.getDataField();
         resultHashMap.put(KEY_BACK_CODE, Tools.Bytes2HexString(backCode, backCode.length));
         resultHashMap.put(KEY_CMD_ID, ccString);
         if (Arrays.equals(backCode, new byte[]{0x00, 0x00})) {
@@ -142,6 +148,17 @@ public class ResponderIotMeter implements Serializable {
                 break;
             case "3024":
                 System.out.println(IotMeterCommand.cmd3024_name);
+                break;
+            case "3042":
+                //主站主动抄表数据
+                String dataStr = Protocol.getInstance().hexToHexString(data);
+                MeterDataVo meterDataVo = this.opMeterData(dataStr, meterId);
+                resultHashMap.put(KEY_METER_ID,meterDataVo.getMeterId());
+                resultHashMap.put(KEY_METER_VALUE,meterDataVo.getFlow());
+                resultHashMap.put(KEY_METER_VALVE_STATE,meterDataVo.getValveState());
+                resultHashMap.put(KEY_DATA_TIME,meterDataVo.getDataTime());
+
+                System.out.println(IotMeterCommand.cmd3042_name);
                 break;
             default:
                 break;
@@ -635,7 +652,7 @@ public class ResponderIotMeter implements Serializable {
      * @param dataStr
      * @param devNo
      */
-    private void opMeterData(String dataStr, String devNo) {
+    private MeterDataVo opMeterData(String dataStr, String devNo) {
         //01 00 3c6300 320609 50020a 3c1c 3c1c
         //680029304600012001160700000116071700000001000f0000fe7c16
         MeterDataVo vo = new MeterDataVo();
@@ -649,7 +666,7 @@ public class ResponderIotMeter implements Serializable {
         try {
             simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
             Date date = simpleDateFormat.parse(dateStr);
-            vo.setDataTime(date);
+            vo.setDataTime(TimeTag.getStringDate(date));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -675,11 +692,12 @@ public class ResponderIotMeter implements Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return vo;
     }
 
 
     /**
-     * 3046 物联网表下主动抄表 表主动上传数据
+     * 3046 物联网表表具信息主动上报 包含表数据
      *
      * @param command
      */
@@ -783,7 +801,7 @@ public class ResponderIotMeter implements Serializable {
                     break;
             }
             vo.setValveState(state);
-            vo.setDataTime(meterInfo.detailStartDate);
+            vo.setDataTime(TimeTag.getStringDate(meterInfo.detailStartDate));
             vo.setId(Protocol.getInstance().getUUID());
             try {
                 dao.saveMeterData(vo);

@@ -51,11 +51,11 @@ public class RequestIotMeter implements Serializable {
                 if(map == null){
                     map = new HashMap<>();
                     map.put(ResponderIotMeter.KEY_SUCCESS,false);
-                    map.put(ResponderIotMeter.KEY_ERR_MESSAGE, "time out");
+                    map.put(ResponderIotMeter.KEY_ERR_MESSAGE, "超时");
                 }
                 else if(map.size() == 0){
                     map.put(ResponderIotMeter.KEY_SUCCESS,false);
-                    map.put(ResponderIotMeter.KEY_ERR_MESSAGE, "data error");
+                    map.put(ResponderIotMeter.KEY_ERR_MESSAGE, "数据错误");
                 }
             } catch (IOException e) {
                 map.put(ResponderIotMeter.KEY_SUCCESS,false);
@@ -64,7 +64,7 @@ public class RequestIotMeter implements Serializable {
             }
         }else {
             map.put(ResponderIotMeter.KEY_SUCCESS,false);
-            map.put(ResponderIotMeter.KEY_ERR_MESSAGE, "meter offline");
+            map.put(ResponderIotMeter.KEY_ERR_MESSAGE, "气表离线");
         }
 
         return map;

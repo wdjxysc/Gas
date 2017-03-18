@@ -17,9 +17,9 @@ public class MeterDataVo {
     private int valveState;
 
     /**数据时间*/
-    private Date dataTime;
+    private String dataTime;
     /**创建时间*/
-    private Date createDate;
+    private String createDate;
 
 
     public String getId() {
@@ -54,19 +54,19 @@ public class MeterDataVo {
         this.valveState = valveState;
     }
 
-    public Date getDataTime() {
+    public String getDataTime() {
         return dataTime;
     }
 
-    public void setDataTime(Date dataTime) {
+    public void setDataTime(String dataTime) {
         this.dataTime = dataTime;
     }
 
-    public Date getCreateDate() {
+    public String getCreateDate() {
         return createDate;
     }
 
-    public void setCreateDate(Date createDate) {
+    public void setCreateDate(String createDate) {
         this.createDate = createDate;
     }
 

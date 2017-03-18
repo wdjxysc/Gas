@@ -1,5 +1,8 @@
 package webapp.sockets.iotmeter.db;
 
+import org.apache.log4j.Logger;
+import webapp.sockets.iotmeter.IotMeterServer;
+
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -10,6 +13,8 @@ public class ConnectionProvider {
 	private String DB_URL;
 	private String DB_USER;
 	private String DB_PASSWORD;
+
+	private static Logger log = Logger.getLogger(ConnectionProvider.class);
 	
 	public ConnectionProvider(){
 		JDBC_DRIVER = PropertyReader.get("driverClassName");
@@ -23,6 +28,7 @@ public class ConnectionProvider {
 		}
 		catch(Exception e){
 			e.printStackTrace();
+			log.info("异常" + e.getMessage());
 		}
 	}
 	
