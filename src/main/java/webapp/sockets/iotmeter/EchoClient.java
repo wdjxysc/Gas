@@ -16,7 +16,7 @@ public class EchoClient {
 	
 	public EchoClient() throws IOException{
 		socket = new Socket(host, port);
-		
+
 	}
 	
 	public static void main(String[] args) throws Exception{

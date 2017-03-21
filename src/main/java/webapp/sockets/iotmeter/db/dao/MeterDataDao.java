@@ -36,7 +36,7 @@ public class MeterDataDao {
         ArrayList<MeterDataVo> arrayList = new ArrayList();
         try{
             StringBuffer sql = new StringBuffer();
-            sql.append("select * from meter_data where meter_id = ?");
+            sql.append("select * from meter_data where meter_id = ? order by create_date desc");
             conn = pool.getConnection();
             ps = conn.prepareStatement(sql.toString());
             ps.setString(1,meterId);
@@ -47,7 +47,8 @@ public class MeterDataDao {
                 meterDataVo.setMeterId(rs.getString(2));
                 meterDataVo.setFlow(rs.getFloat(3));
                 meterDataVo.setValveState(rs.getInt(4));
-                meterDataVo.setDataTime(TimeTag.getStringDate(rs.getDate(5)));
+                meterDataVo.setDataTime(TimeTag.getStringDate(rs.getTime(5)));
+                meterDataVo.setCreateDate(TimeTag.getStringDate(rs.getTime(6)));
                 arrayList.add(meterDataVo);
             }
         }

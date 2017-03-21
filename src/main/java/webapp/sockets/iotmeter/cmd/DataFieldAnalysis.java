@@ -187,11 +187,11 @@ public class DataFieldAnalysis {
             /*三位小数*/
         byte[] intPartBytes = new byte[4];
         System.arraycopy(flowBytes, 2, intPartBytes, 0, intPartBytes.length);
-        int intPart = intPartBytes[0] + (intPartBytes[1] << 8) + (intPartBytes[2] << 16) + (intPartBytes[3] << 24);
+        int intPart = (intPartBytes[0]&0xff) + ((intPartBytes[1]&0xff) << 8) + ((intPartBytes[2]&0xff) << 16) + ((intPartBytes[3]&0xff) << 24);
 
         byte[] decPartBytes = new byte[2];
         System.arraycopy(flowBytes, 0, decPartBytes, 0, decPartBytes.length);
-        int decPart = decPartBytes[0] + (decPartBytes[1] << 8);
+        int decPart = (decPartBytes[0]&0xff) + ((decPartBytes[1]&0xff) << 8);
 
         return intPart + ((float) decPart) / 1000.0f;
     }

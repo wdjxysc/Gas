@@ -18,7 +18,8 @@
             <th style="text-align: center">表号</th>
             <th style="text-align: center">读数</th>
             <th style="text-align: center">阀门</th>
-            <th style="text-align: center">时间</th>
+            <th style="text-align: center">数据时间</th>
+            <th style="text-align: center">创建时间</th>
         </tr>
     </table>
 </div>
@@ -77,7 +78,7 @@
         };
 
         let meterId = param["meterid"];
-        xmlhttp.open("GET", "http://localhost:8080/meter/data?meterid=" + meterId, true);
+        xmlhttp.open("GET", "meter/data?meterid=" + meterId, true);
         xmlhttp.send();
     }
 
@@ -99,6 +100,7 @@
             '<td class="flow" style="text-align: center"> '+ meterData.flow +'</td>' +
             '<td class="valve-state" style="text-align: center"> '+ valveState +'</td>' +
             '<td class="data-time" style="text-align: center"> '+ meterData.dataTime +'</td>' +
+            '<td class="create-time" style="text-align: center"> '+ meterData.createDate +'</td>' +
             '</tr>';
         $('#meter-data-list').append(newRow);
     }

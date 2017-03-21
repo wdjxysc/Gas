@@ -32,7 +32,7 @@ public class IotMeterInfoDao {
         int count = 0;
         try{
             StringBuffer sql = new StringBuffer();
-            sql.append("select count(*) from iot_meter_info where meter_id = ?");
+            sql.append("select count(*) from iot_meter_info where meter_id = ? order by create_date desc");
             conn = pool.getConnection();
             ps = conn.prepareStatement(sql.toString());
             ps.setString(1, meterId);
@@ -101,7 +101,7 @@ public class IotMeterInfoDao {
                 iotMeterInfoVo.setMeterId(rs.getString(2));
                 iotMeterInfoVo.setClientIp(rs.getString(3));
                 iotMeterInfoVo.setClientPort(rs.getInt(4));
-                iotMeterInfoVo.setLastOnlineDate(TimeTag.getStringDate(rs.getDate(5)));
+                iotMeterInfoVo.setLastOnlineDate(TimeTag.getStringDate(rs.getTime(5)));
                 arrayList.add(iotMeterInfoVo);
             }
         }
@@ -145,7 +145,7 @@ public class IotMeterInfoDao {
      * @return
      * @throws Exception
      */
-    public int saveIotMeterInfo(IotMeterInfoVo vo) throws Exception{
+    public int saveIotMeterInfo(IotMeterInfoVo vo){
         log.info("IotMeterInfoDao saveIotMeterInfo(IotMeterInfoVo vo) 方法开始处理...");
         Connection conn = null;
         PreparedStatement ps = null;
