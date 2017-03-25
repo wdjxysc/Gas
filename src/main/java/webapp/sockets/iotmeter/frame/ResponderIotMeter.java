@@ -704,7 +704,7 @@ public class ResponderIotMeter implements Serializable {
     private void command3046Response(byte[] command) {
         log.info("command3046Response(byte[] command) 方法开始处理...");
         byte[] receive = command;
-        byte[] returnByte = new byte[33];
+        byte[] returnByte = new byte[35];
 
         int pos = 0;
         // 68
@@ -712,7 +712,7 @@ public class ResponderIotMeter implements Serializable {
         pos += 1;
 
         //报文长度
-        byte[] lengthOfFrame = new byte[]{0x21, 0x00};
+        byte[] lengthOfFrame = new byte[]{0x23, 0x00};
         System.arraycopy(lengthOfFrame, 0, returnByte, pos, 2);
         pos += 2;
 
@@ -738,7 +738,7 @@ public class ResponderIotMeter implements Serializable {
         pos += 7;
 
         //数据域长度
-        byte[] dataFieldLengthBytes = new byte[]{0x02, 0x00};
+        byte[] dataFieldLengthBytes = new byte[]{0x09, 0x00};
         System.arraycopy(dataFieldLengthBytes, 0, returnByte, pos, 2);
         int receiveDataFieldLength = receive[pos]&0xff + (receive[pos+1]<<8)&0xff;
         int dataFieldLengthDataPos = pos;
@@ -755,6 +755,9 @@ public class ResponderIotMeter implements Serializable {
         System.arraycopy(add_response_flag, 0, returnByte, pos, 2);
         pos += 2;
 
+
+        System.arraycopy(devNoByte, 0, returnByte, pos, 7);
+        pos += 7;
 
         //CRC-16的生成多项式x16+x15+x2+1， 0x8005
         //byte[] add_crc_code = Protocol.getInstance().crc16(returnByte, pos, 0x8005);

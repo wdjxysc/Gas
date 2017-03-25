@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>表数据</title>
+    <link rel="stylesheet" href="css/style.css" type="text/css" media="all"/>
+    <link href="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jQuery (Bootstrap 的 JavaScript 插件需要引入 jQuery) -->
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="js/jquery.js"></script>
+</head>
+<body>
+<div style="margin: 20px;padding: 20px">
+    <button class="btn btn-success" type="button" style="width: 100%"  onclick="refreshMeterDataList()">刷新表数据</button>
+    <table class="reference" id="meter-data-list">
+        <tr>
+            <th style="text-align: center">序号</th>
+            <th style="text-align: center">表号</th>
+            <th style="text-align: center">读数</th>
+            <th style="text-align: center">阀门</th>
+            <th style="text-align: center">数据时间</th>
+            <th style="text-align: center">创建时间</th>
+        </tr>
+    </table>
+</div>
+
+
+<script>
+    let xmlhttp;
+    $(document).ready(function () {
+        if (window.XMLHttpRequest) {
+            //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+            xmlhttp = new XMLHttpRequest();
+        } else {
+            // IE6, IE5 浏览器执行代码
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+
+        refreshMeterDataList();
+    });
+
+
+    let meterDataList;
+    function refreshMeterDataList() {
+        let url = location.search;
+        console.log(url);
+
+        let param = [];
+        if(url.indexOf("?") != -1){
+            let str = url.substr(1);//去掉?号
+            let strs = str.split("&");
+            for(let i = 0;i<strs.length;i++){
+                let keyValue = strs[i].split("=");
+                param[keyValue[0]] = keyValue[1];
+
+                console.log(keyValue[0] + keyValue[1]);
+                console.log("获取到参数" + param["meterid"]);
+            }
+        }
+
+
+        xmlhttp.onreadystatechange=function () {
+
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                //删除除第一行外的所有行
+                $("#meter-data-list").find("tr:not(:first)").remove(".list-item");
+                rowCount = 0;
+
+                let resultJson = JSON.parse(xmlhttp.responseText);
+                meterDataList = resultJson.data;
+                console.log(resultJson.data);
+                for (let i = 0;i<meterDataList.length;i++){
+                    let meterData = meterDataList[i];
+                    addRow(meterData);
+                }
+            }
+
+        };
+
+        let meterId = param["meterid"];
+        xmlhttp.open("GET", "meter/data?meterid=" + meterId, true);
+        xmlhttp.send();
+    }
+
+    let rowCount = 0;
+    function addRow(meterData) {
+        rowCount++;
+        let valveState = "开";
+        if(meterData.valveState == 1){
+            valveState = "开";
+        }else if(meterData.valveState == 2){
+            valveState = "异常";
+        }else if(meterData.valveState == 0){
+            valveState = "关";
+        }
+
+        let newRow = '<tr class="list-item" >' +
+            '<td class="index" style="text-align: center">' + rowCount + '</td>' +
+            '<td class="meter-id" style="text-align: center"">' + meterData.meterId + '</td>' +
+            '<td class="flow" style="text-align: center"> '+ meterData.flow +'</td>' +
+            '<td class="valve-state" style="text-align: center"> '+ valveState +'</td>' +
+            '<td class="data-time" style="text-align: center"> '+ meterData.dataTime +'</td>' +
+            '<td class="create-time" style="text-align: center"> '+ meterData.createDate +'</td>' +
+            '</tr>';
+        $('#meter-data-list').append(newRow);
+    }
+
+
+</script>
+
+</body>
+</html>
