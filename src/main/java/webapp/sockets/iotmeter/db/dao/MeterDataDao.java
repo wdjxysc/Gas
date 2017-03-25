@@ -47,8 +47,8 @@ public class MeterDataDao {
                 meterDataVo.setMeterId(rs.getString(2));
                 meterDataVo.setFlow(rs.getFloat(3));
                 meterDataVo.setValveState(rs.getInt(4));
-                meterDataVo.setDataTime(TimeTag.getStringDate(rs.getTime(5)));
-                meterDataVo.setCreateDate(TimeTag.getStringDate(rs.getTime(6)));
+                meterDataVo.setDataTime(TimeTag.getStringDate(rs.getTimestamp(5)));
+                meterDataVo.setCreateDate(TimeTag.getStringDate(rs.getTimestamp(6)));
                 arrayList.add(meterDataVo);
             }
         }

@@ -101,7 +101,7 @@ public class IotMeterInfoDao {
                 iotMeterInfoVo.setMeterId(rs.getString(2));
                 iotMeterInfoVo.setClientIp(rs.getString(3));
                 iotMeterInfoVo.setClientPort(rs.getInt(4));
-                iotMeterInfoVo.setLastOnlineDate(TimeTag.getStringDate(rs.getTime(5)));
+                iotMeterInfoVo.setLastOnlineDate(TimeTag.getStringDate(rs.getTimestamp(5)));
                 arrayList.add(iotMeterInfoVo);
             }
         }
