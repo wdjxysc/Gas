@@ -114,7 +114,7 @@ public class RequestIotMeter implements Serializable {
         pos += 2;
 
         //传送方向和请求响应标志
-        byte[] add_direction_required_flag = new byte[]{0x00, 0x01};
+        byte[] add_direction_required_flag = new byte[]{0x00, 0x00};
         System.arraycopy(add_direction_required_flag, 0, returnByte, pos, 2);
         pos += 2;
 
@@ -168,7 +168,7 @@ public class RequestIotMeter implements Serializable {
         pos += 2;
 
         //传送方向和请求响应标志
-        byte[] add_direction_required_flag = new byte[]{0x00, 0x01};
+        byte[] add_direction_required_flag = new byte[]{0x00, 0x00};
         System.arraycopy(add_direction_required_flag, 0, returnByte, pos, 2);
         pos += 2;
 
@@ -221,7 +221,7 @@ public class RequestIotMeter implements Serializable {
         pos += 2;
 
         //传送方向和请求响应标志
-        byte[] add_direction_required_flag = new byte[]{0x00, 0x01};
+        byte[] add_direction_required_flag = new byte[]{0x00, 0x00};
         System.arraycopy(add_direction_required_flag, 0, returnByte, pos, 2);
         pos += 2;
 
