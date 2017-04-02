@@ -76,11 +76,11 @@ public class IotMeterMessageHandler implements Runnable{
                 if (k < 3) {
                     continue;
                 }
-                length = dataStr[i + 2];
+                length = dataStr[i + 2]&0xff;
 
                 length = (length << 8);
 
-                length +=  dataStr[i + 1];
+                length +=  dataStr[i + 1]&0xff;
 
                 n = k;
 
