@@ -201,7 +201,10 @@ public class IotMeterMessageHandler implements Runnable{
     }
 
     private static final Object lock = new Object();
-    private static final int msgTimeout = 20000;//同步超时时间
+    /**
+     * 同步通信超时时间
+     */
+    private static final int msgTimeout = 10000;//同步通信超时时间
     private static byte[] syncsSendData = null;
 
     /**

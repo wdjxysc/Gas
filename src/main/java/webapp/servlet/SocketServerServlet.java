@@ -88,9 +88,9 @@ public class SocketServerServlet extends HttpServlet {
             result.put("err_msg",map.get(ResponderIotMeter.KEY_ERR_MESSAGE));
         }else {
             result.put("meterId",map.get(ResponderIotMeter.KEY_METER_ID));
-            result.put("flow",map.get(ResponderIotMeter.KEY_METER_ID));
-            result.put("valveState",map.get(ResponderIotMeter.KEY_METER_ID));
-            result.put("dataTime",map.get(ResponderIotMeter.KEY_METER_ID));
+            result.put("flow",map.get(ResponderIotMeter.KEY_METER_VALUE));
+            result.put("valveState",map.get(ResponderIotMeter.KEY_METER_VALVE_STATE));
+            result.put("dataTime",map.get(ResponderIotMeter.KEY_DATA_TIME));
         }
         return result;
     }

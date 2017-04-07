@@ -30,6 +30,8 @@
             refreshMeterList();
         });
 
+        window.setInterval(refreshMeterList, 10000);
+
         function readMeter(obj) {
             let parent = obj.parentNode.parentNode;
             let child = parent.getElementsByClassName('meter-id')[0];
@@ -41,6 +43,14 @@
                     if (resultJson["success"] == false) {
                         alert('失败: ▲原因---' + resultJson['err_msg']);
                     } else if (resultJson["success"] == true) {
+                        let valveState = "异常";
+                        if(resultJson['valveState'] == 0){
+                            valveState = "关";
+                        }else if(resultJson['valveState'] == 1){
+                            valveState = "开";
+                        }else {
+                            valveState = "异常";
+                        }
                         alert('成功: ▲表号---' + resultJson['meterId'] +
                             '▲表读数---' + resultJson['flow'] +
                             '▲阀门状态---' + resultJson['valveState'] +

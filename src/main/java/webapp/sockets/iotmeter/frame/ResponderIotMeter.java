@@ -151,7 +151,7 @@ public class ResponderIotMeter implements Serializable {
                 break;
             case "3042":
                 //主站主动抄表数据
-                String dataStr = Protocol.getInstance().hexToHexString(data);
+                String dataStr = Protocol.getInstance().hexToHexString(data).substring(50, 92);
                 MeterDataVo meterDataVo = this.opMeterData(dataStr, meterId);
                 resultHashMap.put(KEY_METER_ID,meterDataVo.getMeterId());
                 resultHashMap.put(KEY_METER_VALUE,meterDataVo.getFlow());
