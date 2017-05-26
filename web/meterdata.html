@@ -54,7 +54,7 @@
                 param[keyValue[0]] = keyValue[1];
 
                 console.log(keyValue[0] + keyValue[1]);
-                console.log("获取到参数" + param["meterid"]);
+                console.log("获取到参数" + param["meterId"]);
             }
         }
 
@@ -77,8 +77,8 @@
 
         };
 
-        let meterId = param["meterid"];
-        xmlhttp.open("GET", "meter/data?meterid=" + meterId, true);
+        let meterId = param["meterId"];
+        xmlhttp.open("GET", "meter/data?meterId=" + meterId, true);
         xmlhttp.send();
     }
 

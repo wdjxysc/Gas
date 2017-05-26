@@ -71,6 +71,11 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.6</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>7.0.47</version>
+        </dependency>
     </dependencies>
 
 

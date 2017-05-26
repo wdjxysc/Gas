@@ -2,10 +2,10 @@ package webapp.sockets.iotmeter.db.dao;
 
 
 import org.apache.log4j.Logger;
-import webapp.sockets.iotmeter.db.ConnectionPool;
-import webapp.sockets.iotmeter.db.ConnectionPoolImpl;
+import webapp.db.ConnectionPool;
+import webapp.db.ConnectionPoolImpl;
 import webapp.sockets.iotmeter.db.vo.AirIndexVo;
-import webapp.sockets.iotmeter.util.TimeTag;
+import webapp.sockets.util.TimeTag;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

@@ -3,6 +3,9 @@ package webapp.servlet;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import webapp.sockets.concentrateor.dao.ConcentratorCollectorMeterMapDao;
+import webapp.sockets.concentrateor.dao.vo.ConcentratorCollectorMeterMapVo;
+import webapp.sockets.concentrateor.dao.vo.ConcentratorInfoVo;
 import webapp.sockets.iotmeter.IotMeterServer;
 import webapp.sockets.iotmeter.db.dao.IotMeterInfoDao;
 import webapp.sockets.iotmeter.db.dao.MeterDataDao;
@@ -38,12 +41,17 @@ public class MeterServlet extends HttpServlet {
         }
 
         Map<String, String[]> map = request.getParameterMap();
+
         switch (methodStr) {
             case "list":
-                resultMap = getMeterList();
+                if(map.containsKey("concentratorId")){
+                    resultMap = getMeterList(map.get("concentratorId")[0]);
+                }else {
+                    resultMap = getMeterList();
+                }
                 break;
             case "data":
-                resultMap = getMeterData(map.get("meterid")[0]);
+                resultMap = getMeterData(map.get("meterId")[0]);
                 break;
         }
 
@@ -63,7 +71,34 @@ public class MeterServlet extends HttpServlet {
      *
      * @return
      */
-    private HashMap<String, Object> getMeterList() {
+    public static HashMap<String, Object> getMeterList(String concentratorId) {
+        HashMap<String, Object> map = new HashMap<>();
+
+
+        ConcentratorCollectorMeterMapDao dao = new ConcentratorCollectorMeterMapDao();
+        ArrayList<ConcentratorCollectorMeterMapVo> vos = dao.queryMapByConcentratorId(concentratorId);
+
+        ArrayList<HashMap<String, Object>> listMap = new ArrayList<>();
+        for (ConcentratorCollectorMeterMapVo vo : vos) {
+            listMap.add(JSON.parseObject(JSON.toJSONString(vo), new TypeReference<HashMap<String, Object>>() {
+            }));
+        }
+
+        IotMeterServer iotMeterServer = IotMeterServer.getInstance();
+
+
+        map.put("success", true);
+        map.put("data", listMap);
+        return map;
+    }
+
+
+    /**
+     * 查询 表信息状态 包括表在线状态
+     *
+     * @return
+     */
+    public static HashMap<String, Object> getMeterList() {
         HashMap<String, Object> map = new HashMap<>();
 
 

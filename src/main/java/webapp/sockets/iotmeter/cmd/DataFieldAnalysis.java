@@ -1,7 +1,7 @@
 package webapp.sockets.iotmeter.cmd;
 
 import webapp.sockets.iotmeter.cmd.bean.MeterInfo;
-import webapp.sockets.iotmeter.util.Tools;
+import webapp.sockets.util.Tools;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

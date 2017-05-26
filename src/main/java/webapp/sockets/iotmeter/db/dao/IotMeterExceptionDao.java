@@ -2,10 +2,10 @@ package webapp.sockets.iotmeter.db.dao;
 
 
 import org.apache.log4j.Logger;
-import webapp.sockets.iotmeter.db.ConnectionPool;
-import webapp.sockets.iotmeter.db.ConnectionPoolImpl;
+import webapp.db.ConnectionPool;
+import webapp.db.ConnectionPoolImpl;
 import webapp.sockets.iotmeter.db.vo.MeterExceptionVo;
-import webapp.sockets.iotmeter.util.TimeTag;
+import webapp.sockets.util.TimeTag;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -83,7 +83,7 @@ public class IotMeterExceptionDao {
     }
 
     public int saveMeterException(MeterExceptionVo meterExceptionVo) {
-        log.info("IotMeterExceptionDao saveMeterException(MeterExceptionVo meterExceptionVo) 方法开始处理...");
+        log.info("MeterExceptionDao saveMeterException(MeterExceptionVo meterExceptionVo) 方法开始处理...");
         Connection conn = null;
         PreparedStatement ps = null;
         StringBuffer sql = new StringBuffer();

@@ -1,8 +1,8 @@
 package webapp.sockets.iotmeter.frame;
 
 import webapp.sockets.iotmeter.IotMeterMessageHandler;
-import webapp.sockets.iotmeter.protocol.Protocol;
-import webapp.sockets.iotmeter.util.Tools;
+import webapp.sockets.util.Protocol;
+import webapp.sockets.util.Tools;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -256,7 +256,7 @@ public class RequestIotMeter implements Serializable {
 
 
 //    public static void main(String[] args){
-//        RequestIotMeter requestIotMeter = new RequestIotMeter();
+//        RequesterConcentrator requestIotMeter = new RequesterConcentrator();
 //        requestIotMeter.readMeter("20011607000001");
 //    }
 }

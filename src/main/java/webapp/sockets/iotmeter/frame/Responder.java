@@ -10,7 +10,7 @@ import webapp.sockets.iotmeter.db.vo.AirIndexVo;
 import webapp.sockets.iotmeter.db.vo.DeviceAnomalyVo;
 import webapp.sockets.iotmeter.db.vo.DeviceVo;
 import webapp.sockets.iotmeter.encode.RTHCDecoder;
-import webapp.sockets.iotmeter.protocol.Protocol;
+import webapp.sockets.util.Protocol;
 
 import java.io.Serializable;
 

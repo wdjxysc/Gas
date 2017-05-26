@@ -4,7 +4,7 @@ package webapp.sockets.iotmeter;
 
 import org.apache.log4j.Logger;
 import webapp.sockets.iotmeter.frame.Responder;
-import webapp.sockets.iotmeter.protocol.Protocol;
+import webapp.sockets.util.Protocol;
 
 import java.io.IOException;
 import java.io.InputStream;

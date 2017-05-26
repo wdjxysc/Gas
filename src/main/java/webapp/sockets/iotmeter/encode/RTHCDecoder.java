@@ -2,8 +2,8 @@ package webapp.sockets.iotmeter.encode;
 
 
 import webapp.sockets.iotmeter.field.*;
-import webapp.sockets.iotmeter.protocol.Protocol;
-import webapp.sockets.iotmeter.util.HexToInt;
+import webapp.sockets.util.Protocol;
+import webapp.sockets.util.HexToInt;
 
 /**
  * 

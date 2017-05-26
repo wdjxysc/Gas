@@ -3,8 +3,8 @@ package webapp.sockets.iotmeter;
 import org.apache.log4j.Logger;
 import webapp.sockets.iotmeter.frame.ReceivedFrame;
 import webapp.sockets.iotmeter.frame.ResponderIotMeter;
-import webapp.sockets.iotmeter.protocol.Protocol;
-import webapp.sockets.iotmeter.util.Tools;
+import webapp.sockets.util.Protocol;
+import webapp.sockets.util.Tools;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,10 +13,9 @@ import java.net.Socket;
 import java.util.Date;
 import java.util.HashMap;
 
-import static webapp.sockets.iotmeter.IotMeterServer.addMeterToOnlineList;
 
-public class IotMeterMessageHandler implements Runnable{
-    private static Logger log = Logger.getLogger(Handler.class);
+public class IotMeterMessageHandler implements Runnable {
+    private static Logger log = Logger.getLogger(IotMeterMessageHandler.class);
     private Socket socket;
 
     private Date lastReceiveDataTime = new Date();
@@ -27,7 +26,7 @@ public class IotMeterMessageHandler implements Runnable{
 
     @Override
     public void run() {
-        try{
+        try {
 
             log.info("新连接：" + socket.getInetAddress().getHostName() + ":" + socket.getPort());
             IotMeterServer.num++;
@@ -37,21 +36,20 @@ public class IotMeterMessageHandler implements Runnable{
 
             while (socket.isConnected() && !socket.isClosed()) {
                 //若超时还未接收任何数据 关闭当前socket连接
-                if((new Date()).getTime()-lastReceiveDataTime.getTime() >= IotMeterServer.ConnectTimeout){
+                if ((new Date()).getTime() - lastReceiveDataTime.getTime() >= IotMeterServer.ConnectTimeout) {
                     closeSocket();
                     continue;
                 }
 
-                int i=0;
-                int k=0;
-                int n=0;
-                int length=0;
-                int ucTmrCnt=0;
+                int i = 0;
+                int k = 0;
+                int n = 0;
+                int length = 0;
+                int ucTmrCnt = 0;
 
                 try {
                     Thread.sleep(100);
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
@@ -65,30 +63,29 @@ public class IotMeterMessageHandler implements Runnable{
 
                 int read = inputStream.read(dataStr);
                 /* Frame Header */
-                for (i=0; i<dataStr.length; i++) {
+                for (i = 0; i < dataStr.length; i++) {
                     if (dataStr[i] == 0x68) {
                         break;
                     }
                 }
 
                 k = (dataStr.length - i);
-				/*	68 20 00 */
+                /*	68 20 00 */
                 if (k < 3) {
                     continue;
                 }
-                length = dataStr[i + 2]&0xff;
+                length = dataStr[i + 2] & 0xff;
 
                 length = (length << 8);
 
-                length +=  dataStr[i + 1]&0xff;
+                length += dataStr[i + 1] & 0xff;
 
                 n = k;
 
-                for (; n<length; ) {
+                for (; n < length; ) {
                     try {
                         Thread.sleep(100);
-                    }
-                    catch (InterruptedException e) {
+                    } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     n = inputStream.available();
@@ -117,11 +114,11 @@ public class IotMeterMessageHandler implements Runnable{
                     System.arraycopy(ucArrRestDat, 0, ucArrDat, k, n);
                 }
 
-                if (ucArrDat[length - 1] != 0x16) {	//
+                if (ucArrDat[length - 1] != 0x16) {    //
                     continue;
                 }
 
-                if (Protocol.getInstance().calcCrc16(ucArrDat, 0, (length - 1)) != 0 ) {
+                if (Protocol.getInstance().calcCrc16(ucArrDat, 0, (length - 1)) != 0) {
                     continue;
                 }
 
@@ -130,37 +127,35 @@ public class IotMeterMessageHandler implements Runnable{
 
                 try {
                     messageHandler(ucArrDat);
-                }catch (Exception ex){
+                } catch (Exception ex) {
                     ex.printStackTrace();
                 }
 
             }
 
-        }
-        catch(IOException e){
-            log.error(e.getMessage(), e);
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static HashMap<String,Object> resultMap = new HashMap<>();
+    private static HashMap<String, Object> resultMap = new HashMap<>();
+
     /**
-     *
      * @param message
      */
     public void messageHandler(byte[] message) {
         String messageStr = Protocol.getInstance().hexToHexString(message);
         ResponderIotMeter responder = new ResponderIotMeter(messageStr, socket.getInetAddress().getHostAddress(), socket.getPort());
-        if(responder.isResponseFrame(message)){
+        if (responder.isResponseFrame(message)) {
 
             //如果接收到的数据是回复帧 获取返回结果
-            synchronized (lock){
-                if(responder.isPair(syncsSendData,message)) {
+            synchronized (lock) {
+                if (responder.isPair(syncsSendData, message)) {
                     resultMap = responder.getResultHashMap();
                     lock.notify();
                 }
             }
-        }else {
+        } else {
             //如果接收到的数据是请求帧 则解析得到回复帧 并回复
             byte[] responderFrame = responder.getReturnByte();
             try {
@@ -171,16 +166,17 @@ public class IotMeterMessageHandler implements Runnable{
 
             //如果请求帧是表注册 则添加表到在线表列表
             ReceivedFrame receivedFrame = new ReceivedFrame(message);
-            String meterId = Tools.Bytes2HexString(receivedFrame.getSsid().getSubStationIdByte(),receivedFrame.getSsid().getSubStationIdByte().length);
-            String cmdIdStr = Tools.Bytes2HexString(receivedFrame.getControlCode().getControlCodeByte(),receivedFrame.getControlCode().getControlCodeByte().length);
-            if(cmdIdStr.equals("3004")){
-                addMeterToOnlineList(meterId,socket);
+            String meterId = Tools.Bytes2HexString(receivedFrame.getSsid().getSubStationIdByte(), receivedFrame.getSsid().getSubStationIdByte().length);
+            String cmdIdStr = Tools.Bytes2HexString(receivedFrame.getControlCode().getControlCodeByte(), receivedFrame.getControlCode().getControlCodeByte().length);
+            if (cmdIdStr.equals("3004")) {
+                IotMeterServer.addMeterToOnlineList(meterId, socket);
             }
         }
     }
 
     /**
      * 向指定socket发送数据
+     *
      * @param socket
      * @param sendByte
      * @throws IOException
@@ -209,11 +205,12 @@ public class IotMeterMessageHandler implements Runnable{
 
     /**
      * 向指定socket发送数据并获取返回 同步
+     *
      * @param socket
      * @param sendByte
      * @throws IOException
      */
-    public static HashMap<String,Object> syncsSendMessage(Socket socket, byte[] sendByte) throws IOException {
+    public static HashMap<String, Object> syncsSendMessage(Socket socket, byte[] sendByte) throws IOException {
         HashMap<String, Object> map = new HashMap<>();
         if (sendByte == null) {
             log.info("sendByte NULL;");
@@ -247,7 +244,7 @@ public class IotMeterMessageHandler implements Runnable{
     /**
      * 关闭当前socket连接
      */
-    public void closeSocket(){
+    public void closeSocket() {
 
         try {
             socket.close();
@@ -258,7 +255,7 @@ public class IotMeterMessageHandler implements Runnable{
         IotMeterServer.num--;
         IotMeterServer.socketArrayList.remove(socket);
         IotMeterServer.removeMeterFromOnlineList(socket);
-        log.info("关闭连接:"+socket.getInetAddress()+":"+socket.getPort()+"-->连接数：" + IotMeterServer.num);
+        log.info("关闭连接:" + socket.getInetAddress() + ":" + socket.getPort() + "-->连接数：" + IotMeterServer.num);
     }
 
 }

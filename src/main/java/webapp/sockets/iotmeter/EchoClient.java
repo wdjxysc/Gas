@@ -2,7 +2,7 @@ package webapp.sockets.iotmeter;
 
 
 
-import webapp.sockets.iotmeter.protocol.Protocol;
+import webapp.sockets.util.Protocol;
 
 import java.io.*;
 import java.net.Socket;

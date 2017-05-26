@@ -1,6 +1,6 @@
 package webapp.sockets.iotmeter.field;
 
-import webapp.sockets.iotmeter.protocol.Protocol;
+import webapp.sockets.util.Protocol;
 
 import java.io.Serializable;
 

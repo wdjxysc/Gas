@@ -1,12 +1,12 @@
 package webapp.sockets.iotmeter.field;
 
 
-import webapp.sockets.iotmeter.protocol.Protocol;
+import webapp.sockets.util.Protocol;
 
 import java.io.Serializable;
 
 /**
- * 报文
+ * 报文 ID
  * @author Administrator
  *
  */

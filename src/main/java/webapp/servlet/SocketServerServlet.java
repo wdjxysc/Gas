@@ -2,6 +2,8 @@ package webapp.servlet;
 
 
 import com.alibaba.fastjson.JSON;
+import org.apache.log4j.Logger;
+import webapp.sockets.concentrateor.IotConcentratorServer;
 import webapp.sockets.iotmeter.IotMeterServer;
 import webapp.sockets.iotmeter.cmd.bean.MeterInfo;
 import webapp.sockets.iotmeter.frame.RequestIotMeter;
@@ -22,19 +24,20 @@ import java.util.Map;
  */
 @WebServlet(name = "SocketServerServlet", loadOnStartup = 0, urlPatterns = "/socket/*")
 public class SocketServerServlet extends HttpServlet {
+    private static Logger log = Logger.getLogger(SocketServerServlet.class);
 
     private IotMeterServer iotMeterServer;
 
+
+
     @Override
     public void init() throws ServletException {
-            iotMeterServer = IotMeterServer.getInstance();
+        iotMeterServer = IotMeterServer.getInstance();
 
-            new Thread(() -> iotMeterServer.startServer()).start();
+        //tomcat服务启动时启动socket服务
+        new Thread(() -> iotMeterServer.startServer()).start();
 
-        MeterInfo meterInfo = new MeterInfo();
-        meterInfo.setMeterId("dsaffasdfaf");
-        System.out.println("启动");
-        log("启动");
+
         super.init();
     }
 
@@ -116,5 +119,11 @@ public class SocketServerServlet extends HttpServlet {
             result.put("err_msg",map.get(ResponderIotMeter.KEY_ERR_MESSAGE));
         }
         return result;
+    }
+
+    @Override
+    public void destroy() {
+        iotMeterServer.stopServer();
+        super.destroy();
     }
 }
