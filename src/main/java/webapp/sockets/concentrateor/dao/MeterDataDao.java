@@ -4,6 +4,7 @@ package webapp.sockets.concentrateor.dao;
 import org.apache.log4j.Logger;
 import webapp.db.ConnectionPool;
 import webapp.db.ConnectionPoolImpl;
+import webapp.dbcp.DbcpProvider;
 import webapp.sockets.concentrateor.dao.vo.MeterDataVo;
 import webapp.sockets.util.TimeTag;
 
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 public class MeterDataDao {
 
     private static Logger log = Logger.getLogger(MeterDataDao.class);
-    ConnectionPool pool = new ConnectionPoolImpl();
+//    ConnectionPool pool = new ConnectionPoolImpl();
 
     /**
      * 查询数据列表
@@ -36,7 +37,8 @@ public class MeterDataDao {
         try{
             StringBuffer sql = new StringBuffer();
             sql.append("select * from meter_data where meter_id = ? order by create_date desc");
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             ps = conn.prepareStatement(sql.toString());
             ps.setString(1,meterId);
             rs = ps.executeQuery();
@@ -74,7 +76,8 @@ public class MeterDataDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn=null;
                 }
             }
@@ -96,7 +99,8 @@ public class MeterDataDao {
         Connection conn = null;
         PreparedStatement ps = null;
         try{
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             StringBuffer sql = new StringBuffer();
             sql.append("insert into meter_data (id, meter_id, flow, valve_state, data_date, create_date)");
             sql.append("values(?,?,?,?,?,?)");
@@ -128,11 +132,64 @@ public class MeterDataDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn = null;
                 }
             }
             catch (SQLException e) {
+                log.error(e);
+            }
+        }
+    }
+
+
+    /**
+     * 保存表数据
+     * @param voList
+     * @return
+     * @throws Exception
+     */
+    public int saveMeterData(ArrayList<MeterDataVo> voList){
+        log.info("MeterDataDao saveMeterData(MeterDataVo vo) 方法开始处理...");
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try{
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
+            StringBuffer sql = new StringBuffer();
+            sql.append("insert into meter_data (id, meter_id, flow, valve_state, data_date, create_date)");
+            sql.append("values");
+            for (int i = 0;i<voList.size();i++){
+                MeterDataVo vo = voList.get(i);
+                sql.append(String.format("('%s','%s','%.1f','%d','%s','%s')",
+                        vo.getId(),vo.getMeterId(),vo.getFlow(),vo.getValveState(),vo.getDataTime(),TimeTag.getStringDate()));
+                if(i<voList.size()-1){
+                    sql.append(",");
+                }
+            }
+            ps = conn.prepareStatement(sql.toString());
+
+            return ps.executeUpdate();
+        } catch(Exception e){
+            log.error("保存出错！", e);
+            return -1;
+        } finally{
+            try {
+                if (ps != null) {
+                    ps.close();
+                    ps = null;
+                }
+            } catch (SQLException e) {
+                log.error(e);
+            }
+            try {
+                if (conn != null) {
+//                    pool.releaseConnection(conn);
+                    conn.close();
+                    conn = null;
+                }
+            } catch (SQLException e) {
                 log.error(e);
             }
         }

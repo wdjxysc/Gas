@@ -17,7 +17,7 @@ public class IotConcentratorServer extends BaseIotServer {
     }
 
     public IotConcentratorServer(int port, int timeout) throws IOException {
-        super(port,timeout);
+        super(port, timeout);
     }
 
 
@@ -25,6 +25,7 @@ public class IotConcentratorServer extends BaseIotServer {
     public void messageHandler(Socket socket) {
         executorService.execute(new IotConcentratorMessageHandler(socket, connectTimeout));
     }
+
 
     @Override
     public boolean isDeviceOnline(String deviceId) {

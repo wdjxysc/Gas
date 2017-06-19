@@ -2,7 +2,7 @@ package webapp.sockets;
 
 import org.apache.log4j.Logger;
 import webapp.servlet.BaseWebSocket;
-import webapp.sockets.iotmeter.IotMeterServer;
+import webapp.sockets.concentrateor.IotConcentratorMessageHandler;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -45,21 +45,19 @@ public class BaseIotServer {
     }
 
     /**
-     *
      * @param port 端口
      * @throws IOException
      */
     public BaseIotServer(int port) throws IOException {
-        this(port,0);
+        this(port, 0);
     }
 
     /**
-     *
      * @param port
      * @param connectTimeout 连接超时时间 未获取数据时间
      * @throws IOException
      */
-    public BaseIotServer(int port, int connectTimeout) throws IOException{
+    public BaseIotServer(int port, int connectTimeout) throws IOException {
         this.connectTimeout = connectTimeout;
         this.port = port;
         serverSocket = new ServerSocket(port);
@@ -75,7 +73,7 @@ public class BaseIotServer {
      */
     public void startServer() {
         while (true) {
-            if(isStop) break;
+            if (isStop) break;
             Socket socket = null;
             try {
                 socket = serverSocket.accept();
@@ -89,9 +87,10 @@ public class BaseIotServer {
 
     /**
      * 新的线程里处理数据收发 重写该方法实现不同设备的数据处理
+     *
      * @param socket
      */
-    public void messageHandler(Socket socket){
+    public void messageHandler(Socket socket) {
         executorService.execute(new BaseIotMessageHandler(socket));
     }
 
@@ -137,6 +136,10 @@ public class BaseIotServer {
 
         BaseIotMessageHandler baseIotMessageHandler = null;
         for (HashMap<String, Object> anOnlineMeterMapList : onlineDeviceMapList) {
+            log.info("" + anOnlineMeterMapList.get(KEY_DEVICE_ID).toString()
+                    + "====" + ((IotConcentratorMessageHandler) anOnlineMeterMapList.get(KEY_MESSAGE_HANDLER)).socket.getInetAddress() +
+                    ":" + ((IotConcentratorMessageHandler) anOnlineMeterMapList.get(KEY_MESSAGE_HANDLER)).socket.getPort());
+
             if (anOnlineMeterMapList.get(KEY_DEVICE_ID).toString().equals(deviceId)) {
                 baseIotMessageHandler = (BaseIotMessageHandler) anOnlineMeterMapList.get(KEY_MESSAGE_HANDLER);
             }
@@ -147,18 +150,28 @@ public class BaseIotServer {
     /**
      * 添加在线表 若已存在更新 不存在则增加
      *
-     * @param meterId
+     * @param deviceId
      * @param socket
      */
-    public static void addDeviceToOnlineList(String meterId, Socket socket, BaseIotMessageHandler baseIotMessageHandler) {
-        for (HashMap<String, Object> anOnlineDeviceMapList : onlineDeviceMapList) {
-            if (anOnlineDeviceMapList.get(KEY_DEVICE_ID).equals(meterId)) {
-                anOnlineDeviceMapList.put(KEY_SOCKET, socket);
+    public static void addDeviceToOnlineList(String deviceId, Socket socket, BaseIotMessageHandler baseIotMessageHandler) {
+        for (HashMap<String, Object> anOnlineDeviceMap : onlineDeviceMapList) {
+            if (anOnlineDeviceMap.get(KEY_DEVICE_ID).equals(deviceId)) {
+                BaseIotMessageHandler baseIotMessageHandler1 = (BaseIotMessageHandler) anOnlineDeviceMap.get(KEY_MESSAGE_HANDLER);
+                if(baseIotMessageHandler != baseIotMessageHandler1){
+                    baseIotMessageHandler1.release();
+
+                    HashMap<String, Object> map = new HashMap<>();
+                    map.put(KEY_DEVICE_ID, deviceId);
+                    map.put(KEY_SOCKET, socket);
+                    map.put(KEY_MESSAGE_HANDLER, baseIotMessageHandler);
+                    onlineDeviceMapList.add(map);
+                }
                 return;
             }
         }
+
         HashMap<String, Object> map = new HashMap<>();
-        map.put(KEY_DEVICE_ID, meterId);
+        map.put(KEY_DEVICE_ID, deviceId);
         map.put(KEY_SOCKET, socket);
         map.put(KEY_MESSAGE_HANDLER, baseIotMessageHandler);
         onlineDeviceMapList.add(map);
@@ -187,6 +200,7 @@ public class BaseIotServer {
 
     /**
      * 根据deviceId查找该设备是否存在于在线list中
+     *
      * @param deviceId
      * @return
      */
@@ -205,8 +219,4 @@ public class BaseIotServer {
     static final String KEY_SOCKET = "Socket";
     static final String KEY_MESSAGE_HANDLER = "MessageHandler";
 
-
-    public static void main(String[] args) throws Exception {
-        new BaseIotServer().startServer();
-    }
 }

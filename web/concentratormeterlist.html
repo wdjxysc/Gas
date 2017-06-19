@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>物联网表</title>
+    <title>RF表</title>
     <!-- jQuery (Bootstrap 的 JavaScript 插件需要引入 jQuery) -->
     <script src="https://code.jquery.com/jquery.js"></script>
     <link rel="stylesheet" href="css/style.css" type="text/css" media="all"/>
@@ -14,8 +14,8 @@
 
 <body>
 <div style="margin: 20px;padding: 20px">
-
     <script>
+        let concentratorId;
         let xmlhttp;
 
         $(document).ready(function () {
@@ -39,7 +39,7 @@
                 if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                     let resultJson = JSON.parse(xmlhttp.responseText);
                     if (resultJson["success"] == false) {
-                        alert('失败: ▲原因---' + resultJson['err_msg']);
+                        alert('失败: ▲原因---' + resultJson['back_code'] +"---"+ resultJson['err_msg']);
                     } else if (resultJson["success"] == true) {
                         let valveState = "异常";
                         if(resultJson['valveState'] == 0){
@@ -71,7 +71,7 @@
                 if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                     let resultJson = JSON.parse(xmlhttp.responseText);
                     if (resultJson['success'] == false) {
-                        alert('失败: ▲原因---' + resultJson['err_msg']);
+                        alert('失败: ▲原因---' + resultJson['back_code'] +"---"+ resultJson['err_msg']);
                     } else if (resultJson['success'] == true) {
                         alert('成功');
                     }
@@ -93,7 +93,7 @@
                     let resultJson = JSON.parse(xmlhttp.responseText);
 
                     if (resultJson['success'] == false) {
-                        alert('失败: ▲原因---' + resultJson['err_msg']);
+                        alert('失败: ▲原因---' + resultJson['back_code'] +"---"+ resultJson['err_msg']);
                     } else if (resultJson['success'] == true) {
                         alert('成功');
                     }
@@ -143,8 +143,10 @@
                 }
             };
 
-            let meterId = param["concentratorId"];
-            xmlhttp.open("GET", "meter/list?concentratorId=" + meterId, true);
+            concentratorId = param["concentratorId"];
+            let c = $("#concentratorId")[0];
+            c.innerText = '当前集中器:'+concentratorId;
+            xmlhttp.open("GET", "meter/list?concentratorId=" + concentratorId, true);
             xmlhttp.send();
         }
 
@@ -160,10 +162,13 @@
             let newRow = '<tr class="list-item" >' +
                 '<td class="index" style="text-align: center">' + rowCount + '</td>' +
                 '<td class="meter-id" style="text-align: center" onclick="meterIdOnClick(this)"> <a>' + meter.meterId + '</a></td>' +
-                '<td style="align-content: center"> <input class="btn btn-primary" style="margin-right: 5px" type="button" value="抄表" onclick="readMeter(this)">' +
+                '<td style="align-content: center"> ' +
+                '<input class="btn btn-primary" style="margin-right: 5px" type="button" value="抄表" onclick="readMeter(this)">' +
                 '<input class="btn btn-primary" style="margin-right: 5px" type="button" value="开阀" onclick="openValve(this)">' +
                 '<input class="btn btn-primary" type="button" value="关阀" onclick="closeValve(this)"></td>' +
-                '<td class="online" style="text-align: center" >' + online + '</td>' +
+                '<td class="online" style="text-align: center" >' +
+                '<input class="btn btn-primary" style="margin-right: 5px" type="button" value="删除" onclick="removeMeter(this)">' +
+                '</td>' +
                 '</tr>';
             $('#meter-list').append(newRow);
         }
@@ -175,15 +180,65 @@
         }
 
 
+        function removeMeter(obj){
+            let parent = obj.parentNode.parentNode;
+            let child = parent.getElementsByClassName('meter-id')[0];
+            console.log(child);
+            let meterId = child.innerText;
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    let resultJson = JSON.parse(xmlhttp.responseText);
+                    if (resultJson['success'] == false) {
+                        alert('失败: ▲原因---' + resultJson['back_code'] +"---"+ resultJson['err_msg']);
+                    } else if (resultJson['success'] == true) {
+                        alert('成功');
+                        refreshMeterList();
+                    }
+                    console.log(resultJson);
+                }
+            };
+
+            xmlhttp.open("GET", "concentratorSocket/removeSubMeter?concentratorId="+concentratorId+"&meterId=" + meterId, true);
+            xmlhttp.send();
+        }
+
+        function addSubMeter() {
+            let child = document.getElementById('subMeterIdText');
+            console.log(child);
+            let meterId = child.value;
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    let resultJson = JSON.parse(xmlhttp.responseText);
+                    if (resultJson['success'] == false) {
+                        alert('失败: ▲原因---' + resultJson['back_code'] +"---"+ resultJson['err_msg']);
+                    } else if (resultJson['success'] == true) {
+                        alert('成功');
+                        refreshMeterList();
+                    }
+                    console.log(resultJson);
+                }
+            };
+
+            xmlhttp.open("GET", "concentratorSocket/addSubMeter?concentratorId="+concentratorId+"&meterId=" + meterId, true);
+            xmlhttp.send();
+        }
+
+
     </script>
 
     <button class="btn btn-success" type="button" style="width: 100%" onclick="refreshMeterList()">刷新</button>
+    <label id="concentratorId">当前集中器：</label>
+    <button class="btn btn-success" type="button" style="width: auto" onclick="addSubMeter()">增加下级表</button>
+
+    <label>
+        表号：<input id="subMeterIdText">
+    </label>
     <table class="reference" id="meter-list">
         <tr>
             <th style="text-align: center">序号</th>
             <th style="text-align: center">表号</th>
             <th style="text-align: center">操作</th>
-            <th style="text-align: center">在线状态</th>
+            <th style="text-align: center">操作</th>
         </tr>
         <tr class="list-item">
             <td class="index">1</td>

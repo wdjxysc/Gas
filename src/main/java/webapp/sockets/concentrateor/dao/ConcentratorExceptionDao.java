@@ -4,6 +4,7 @@ package webapp.sockets.concentrateor.dao;
 import org.apache.log4j.Logger;
 import webapp.db.ConnectionPool;
 import webapp.db.ConnectionPoolImpl;
+import webapp.dbcp.DbcpProvider;
 import webapp.sockets.concentrateor.dao.vo.ConcentratorExceptionVo;
 import webapp.sockets.util.TimeTag;
 
@@ -18,7 +19,7 @@ import java.util.ArrayList;
  */
 public class ConcentratorExceptionDao {
     private static Logger log = Logger.getLogger(ConcentratorExceptionDao.class);
-    ConnectionPool pool = new ConnectionPoolImpl();
+//    ConnectionPool pool = new ConnectionPoolImpl();
 
     /**
      * 查询异常信息
@@ -36,7 +37,8 @@ public class ConcentratorExceptionDao {
         StringBuffer sql = new StringBuffer();
         sql.append("select id, concentrator_id, collector_id, exception_code, data_date, create_date from concentrator_exception where meter_id=? order by create_date desc;");
         try {
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             ps = conn.prepareStatement(sql.toString());
             ps.setString(1,meterId);
             rs = ps.executeQuery();
@@ -72,7 +74,8 @@ public class ConcentratorExceptionDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn = null;
                 }
             } catch (SQLException e) {
@@ -92,7 +95,8 @@ public class ConcentratorExceptionDao {
         sql.append("insert into concentrator_exception (id, concentrator_id, collector_id, exception_code, data_date," +
                 "create_date) values (?,?,?,?,?,?)");
         try {
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             ps = conn.prepareStatement(sql.toString());
             ps.setString(1, vo.getId());
             ps.setString(2, vo.getConcentratorId());
@@ -117,7 +121,8 @@ public class ConcentratorExceptionDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn = null;
                 }
             } catch (SQLException e) {

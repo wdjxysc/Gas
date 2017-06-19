@@ -4,10 +4,7 @@ import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.log4j.Logger;
 import webapp.sockets.concentrateor.constant.ConcentratorCommand;
 import webapp.sockets.concentrateor.dao.*;
-import webapp.sockets.concentrateor.dao.vo.ConcentratorExceptionVo;
-import webapp.sockets.concentrateor.dao.vo.ConcentratorInfoVo;
-import webapp.sockets.concentrateor.dao.vo.MeterDataVo;
-import webapp.sockets.concentrateor.dao.vo.MeterExceptionVo;
+import webapp.sockets.concentrateor.dao.vo.*;
 import webapp.sockets.concentrateor.encode.*;
 import webapp.sockets.concentrateor.field.*;
 import webapp.sockets.concentrateor.field.datafield.DataContentField;
@@ -19,10 +16,7 @@ import java.io.Serializable;
 import java.sql.Time;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * 响应指令  主站->集中器
@@ -31,6 +25,8 @@ import java.util.HashMap;
  */
 public class ResponderConcentrator implements Serializable {
     private static Logger log = Logger.getLogger(ResponderConcentrator.class);
+
+    public IotFrame receiveIotFrame;
 
     //返回字节
     private byte[] returnByte;
@@ -64,24 +60,24 @@ public class ResponderConcentrator implements Serializable {
      */
     private void commandHandler(byte[] command, String ip, int port) {
         log.info("commandHandler(byte[] command,String ip,int port)方法开始处理...");
-        if (isResponseFrame(command)) {
+        this.receiveIotFrame = new IotFrame(command);
+        if (isResponseFrame(receiveIotFrame)) {
             //如果为响应 处理：存数据库等
-            responseUpFrameHandler(command);
+            responseUpFrameHandler(receiveIotFrame);
         } else {
             //如果为请求 处理：返回数据等
-            requestUpFrameHandler(command, ip, port);
+            requestUpFrameHandler(receiveIotFrame, ip, port);
         }
     }
 
     /**
      * 判断是否为响应帧。
      *
-     * @param command
+     * @param iotFrame
      * @return
      */
-    public boolean isResponseFrame(byte[] command) {
+    public boolean isResponseFrame(IotFrame iotFrame) {
         log.info("isResponseFrame(byte[] command) 方法开始处理...");
-        IotFrame iotFrame = new IotFrame(command);
         //获得响应标识
         byte responseCode = iotFrame.getDrf().getResponse();
         //01响应，00为请求
@@ -96,13 +92,12 @@ public class ResponderConcentrator implements Serializable {
     /**
      * 集中器响应数据处理
      *
-     * @param command
+     * @param iotFrame
      */
-    private void responseUpFrameHandler(byte[] command) {
+    private void responseUpFrameHandler(IotFrame iotFrame) {
         resultHashMap = new HashMap<>();//重新初始化resultHashMap
         log.info("upResponseFrame(byte[] command) 方法开始处理...");
 
-        IotFrame iotFrame = new IotFrame(command);
         log.info(iotFrame.getControlCode().getControlCodeString() + " response code--" + iotFrame.getDataField().getResponseCode().getResponseCodeHexStr());
         String subStationId = iotFrame.getSsid().getSubStationIdStr();
         String ccString = iotFrame.getControlCode().getControlCodeString();
@@ -377,8 +372,26 @@ public class ResponderConcentrator implements Serializable {
             pos += 7;
         }
         hashMap.put(KEY_DETAILS, meters);
-
         resultHashMap.put(KEY_DATA_CONTENT, hashMap);
+
+        new Thread(() -> {
+            ArrayList<ConcentratorCollectorMeterMapVo> vos = new ArrayList<>();
+            ConcentratorCollectorMeterMapDao dao = new ConcentratorCollectorMeterMapDao();
+
+            for (int i = 0; i < meters.size(); i++) {
+                ConcentratorCollectorMeterMapVo vo = new ConcentratorCollectorMeterMapVo();
+                vo.setConcentratorId(hashMap.get(KEY_CONCENTRATOR_ID).toString());
+                vo.setCollectorId(hashMap.get(KEY_COLLECTOR_ID).toString());
+                vo.setMeterId(meters.get(i));
+                vo.setId(Protocol.getInstance().getUUID());
+                vos.add(vo);
+            }
+
+            if(vos.size() > 0 && iotFrame.getDataField().getResponseCode().getResponseCodeHexStr().equals("0000")){
+                dao.deleteMapByConcentratorId(vos.get(0).getConcentratorId());
+                dao.saveOrUpdateMap(vos);
+            }
+        }).start();
     }
 
     private void cmd2041Response(IotFrame iotFrame) {
@@ -408,9 +421,10 @@ public class ResponderConcentrator implements Serializable {
         hashMap.put(KEY_COUNT, count);
         pos += 2;
 
-        ArrayList<HashMap<String,Object>> meterDatas = new ArrayList<>();
+        ArrayList<HashMap<String, Object>> meterDataList = new ArrayList<>();
+        ArrayList<MeterDataVo> meterDataVos = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            HashMap<String,Object> dataDetail = new HashMap<>();
+            HashMap<String, Object> dataDetail = new HashMap<>();
 
             byte[] meterIdBytes = new byte[7];
             System.arraycopy(contentBytes, pos, meterIdBytes, 0, meterIdBytes.length);
@@ -432,27 +446,40 @@ public class ResponderConcentrator implements Serializable {
             }
 
             byte[] flowBytes = new byte[6];
-            System.arraycopy(contentBytes,pos,flowBytes,0,flowBytes.length);
-            pos+=6;
+            System.arraycopy(contentBytes, pos, flowBytes, 0, flowBytes.length);
+            pos += 6;
             float flow = MeterData.meterFlowBytesToFloat(flowBytes);
-            dataDetail.put(KEY_METER_VALUE,flow);
+            dataDetail.put(KEY_METER_VALUE, flow);
 
             byte[] readDataStateBytes = new byte[1];
-            System.arraycopy(contentBytes,pos,readDataStateBytes,0,readDataStateBytes.length);
+            System.arraycopy(contentBytes, pos, readDataStateBytes, 0, readDataStateBytes.length);
             pos++;
-            dataDetail.put(KEY_METER_READ_STATE,readDataStateBytes[0]);
+            dataDetail.put(KEY_METER_READ_STATE, readDataStateBytes[0]);
 
             byte[] meterValveStateBytes = new byte[1];
-            System.arraycopy(contentBytes,pos,meterValveStateBytes,0,meterValveStateBytes.length);
+            System.arraycopy(contentBytes, pos, meterValveStateBytes, 0, meterValveStateBytes.length);
             pos++;
-            dataDetail.put(KEY_METER_VALVE_STATE,meterValveStateBytes[0]);
+            dataDetail.put(KEY_METER_VALVE_STATE, meterValveStateBytes[0]);
 
-            meterDatas.add(dataDetail);
-            //存数据库
-            opMeterData(meterId,flow,meterValveStateBytes[0]&0xff,TimeTag.getStringDate(date));
+            meterDataList.add(dataDetail);
+
+            MeterDataVo vo = new MeterDataVo();
+            vo.setId(Protocol.getInstance().getUUID());
+            vo.setMeterId(meterId);
+            vo.setFlow(flow);
+            vo.setDataTime(TimeTag.getStringDate(date));
+            vo.setValveState(meterValveStateBytes[0] & 0xff);
+
+            meterDataVos.add(vo);
         }
 
-        hashMap.put(KEY_DETAILS,meterDatas );
+        if (meterDataVos.size() > 0) {
+            //存数据库
+            MeterDataDao meterDataDao = new MeterDataDao();
+            meterDataDao.saveMeterData(meterDataVos);
+        }
+
+        hashMap.put(KEY_DETAILS, meterDataList);
 
 
         resultHashMap.put(KEY_DATA_CONTENT, hashMap);
@@ -476,41 +503,43 @@ public class ResponderConcentrator implements Serializable {
 
         byte[] meterIdBytes = new byte[7];
         System.arraycopy(contentBytes, pos, meterIdBytes, 0, meterIdBytes.length);
-        String meterId =   Tools.Bytes2HexString(meterIdBytes, meterIdBytes.length);
+        String meterId = Tools.Bytes2HexString(meterIdBytes, meterIdBytes.length);
         hashMap.put(KEY_METER_ID, meterId);
         pos += 7;
 
         byte[] dateBytes = new byte[7];
         System.arraycopy(contentBytes, pos, dateBytes, 0, dateBytes.length);
-        pos+=7;
+        pos += 7;
         String dateStr = Tools.Bytes2HexString(dateBytes, dateBytes.length);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
         Date date = new Date();
         try {
             date = simpleDateFormat.parse(dateStr);
-            hashMap.put(KEY_DATE, TimeTag.getStringDate(date));
+            hashMap.put(KEY_DATA_TIME, TimeTag.getStringDate(date));
         } catch (ParseException e) {
             e.printStackTrace();
         }
 
         byte[] flowBytes = new byte[6];
-        System.arraycopy(contentBytes,pos,flowBytes,0,flowBytes.length);
-        pos+=6;
+        System.arraycopy(contentBytes, pos, flowBytes, 0, flowBytes.length);
+        pos += 6;
         float flow = MeterData.meterFlowBytesToFloat(flowBytes);
-        hashMap.put(KEY_METER_VALUE,flow);
+        hashMap.put(KEY_METER_VALUE, flow);
 
         byte[] readDataStateBytes = new byte[1];
-        System.arraycopy(contentBytes,pos,readDataStateBytes,0,readDataStateBytes.length);
+        System.arraycopy(contentBytes, pos, readDataStateBytes, 0, readDataStateBytes.length);
         pos++;
-        hashMap.put(KEY_METER_READ_STATE,readDataStateBytes[0]);
+        hashMap.put(KEY_METER_READ_STATE, readDataStateBytes[0]);
 
         byte[] meterValveStateBytes = new byte[1];
-        System.arraycopy(contentBytes,pos,meterValveStateBytes,0,meterValveStateBytes.length);
+        System.arraycopy(contentBytes, pos, meterValveStateBytes, 0, meterValveStateBytes.length);
         pos++;
-        hashMap.put(KEY_METER_VALVE_STATE,meterValveStateBytes[0]);
+        hashMap.put(KEY_METER_VALVE_STATE, meterValveStateBytes[0]);
 
-        //存数据库
-        opMeterData(meterId,flow,meterValveStateBytes[0]&0xff,TimeTag.getStringDate(date));
+        if (iotFrame.getDataField().getResponseCode().getResponseCodeHexStr().equals("0000")) {
+            //存数据库
+            opMeterData(meterId, flow, meterValveStateBytes[0] & 0xff, TimeTag.getStringDate(date));
+        }
 
         resultHashMap.put(KEY_DATA_CONTENT, hashMap);
     }
@@ -553,9 +582,9 @@ public class ResponderConcentrator implements Serializable {
         hashMap.put(KEY_COUNT, count);
         pos += 2;
 
-        ArrayList<HashMap<String,Object>> meterDatas = new ArrayList<>();
+        ArrayList<HashMap<String, Object>> meterDatas = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            HashMap<String,Object> dataDetail = new HashMap<>();
+            HashMap<String, Object> dataDetail = new HashMap<>();
 
             byte[] dateBytes = new byte[7];
             System.arraycopy(contentBytes, pos, dateBytes, 0, dateBytes.length);
@@ -571,19 +600,19 @@ public class ResponderConcentrator implements Serializable {
             }
 
             byte[] flowBytes = new byte[6];
-            System.arraycopy(contentBytes,pos,flowBytes,0,flowBytes.length);
-            pos+=6;
+            System.arraycopy(contentBytes, pos, flowBytes, 0, flowBytes.length);
+            pos += 6;
             float flow = MeterData.meterFlowBytesToFloat(flowBytes);
-            dataDetail.put(KEY_METER_VALUE,flow);
+            dataDetail.put(KEY_METER_VALUE, flow);
 
 
             meterDatas.add(dataDetail);
             //存数据库
-            opMeterHisData(Tools.Bytes2HexString(meterIdBytes,meterIdBytes.length),flow, TimeTag.getStringDate(date), MeterDataHisDao.HisType.Month);
+            opMeterHisData(Tools.Bytes2HexString(meterIdBytes, meterIdBytes.length), flow, TimeTag.getStringDate(date), MeterDataHisDao.HisType.Month);
 
         }
 
-        hashMap.put(KEY_DETAILS, meterDatas );
+        hashMap.put(KEY_DETAILS, meterDatas);
 
 
         resultHashMap.put(KEY_DATA_CONTENT, hashMap);
@@ -626,9 +655,9 @@ public class ResponderConcentrator implements Serializable {
         hashMap.put(KEY_COUNT, count);
         pos += 2;
 
-        ArrayList<HashMap<String,Object>> meterDatas = new ArrayList<>();
+        ArrayList<HashMap<String, Object>> meterDatas = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            HashMap<String,Object> dataDetail = new HashMap<>();
+            HashMap<String, Object> dataDetail = new HashMap<>();
 
             byte[] dateBytes = new byte[7];
             System.arraycopy(contentBytes, pos, dateBytes, 0, dateBytes.length);
@@ -644,18 +673,18 @@ public class ResponderConcentrator implements Serializable {
             }
 
             byte[] flowBytes = new byte[6];
-            System.arraycopy(contentBytes,pos,flowBytes,0,flowBytes.length);
-            pos+=6;
+            System.arraycopy(contentBytes, pos, flowBytes, 0, flowBytes.length);
+            pos += 6;
             float flow = MeterData.meterFlowBytesToFloat(flowBytes);
-            dataDetail.put(KEY_METER_VALUE,flow);
+            dataDetail.put(KEY_METER_VALUE, flow);
 
 
             meterDatas.add(dataDetail);
             //存数据库
-            opMeterHisData(Tools.Bytes2HexString(meterIdBytes,meterIdBytes.length),flow, TimeTag.getStringDate(date), MeterDataHisDao.HisType.Day);
+            opMeterHisData(Tools.Bytes2HexString(meterIdBytes, meterIdBytes.length), flow, TimeTag.getStringDate(date), MeterDataHisDao.HisType.Day);
         }
 
-        hashMap.put(KEY_DETAILS, meterDatas );
+        hashMap.put(KEY_DETAILS, meterDatas);
 
 
         resultHashMap.put(KEY_DATA_CONTENT, hashMap);
@@ -722,47 +751,45 @@ public class ResponderConcentrator implements Serializable {
         pos += 7;
 
         byte[] meterValveStateBytes = new byte[1];
-        System.arraycopy(contentBytes,pos,meterValveStateBytes,0,meterValveStateBytes.length);
+        System.arraycopy(contentBytes, pos, meterValveStateBytes, 0, meterValveStateBytes.length);
         pos++;
-        hashMap.put(KEY_METER_VALVE_STATE,meterValveStateBytes[0]);
+        hashMap.put(KEY_METER_VALVE_STATE, meterValveStateBytes[0]);
 
 
         resultHashMap.put(KEY_DATA_CONTENT, hashMap);
     }
 
 
-
     /**
      * 集中器请求帧处理  主站进行回复
      *
-     * @param command
+     * @param iotFrame
      */
-    private void requestUpFrameHandler(byte[] command, String ip, int port) {
+    private void requestUpFrameHandler(IotFrame iotFrame, String ip, int port) {
         log.info("requestUpFrame(byte[] command,String ip,int port)方法开始处理...");
         log.info("==================从站向主站发送指令=========================");
-        RTHCDecoder decoder = RTHCDecoder.getInstance();
-        byte[] cc = decoder.getControlCodeByte(command);
+        byte[] cc = iotFrame.getControlCode().getControlCodeByte();
         String ccString = Protocol.getInstance().hexToHexString(cc);
         switch (ccString) {
             case "2002":
                 System.out.println(ConcentratorCommand.cmd2002_name);
-                cmd2002Request(command);
+                cmd2002Request(iotFrame);
                 break;
             case "2003":
                 System.out.println(ConcentratorCommand.cmd2003_name);
-                cmd2003Request(command);
+                cmd2003Request(iotFrame);
                 break;
             case "2004":
                 System.out.println(ConcentratorCommand.cmd2004_name);
-                cmd2004Request(command,ip,port);
+                cmd2004Request(iotFrame, ip, port);
                 break;
             case "2061":
                 System.out.println(ConcentratorCommand.cmd2061_name);
-                cmd2061Request(command);
+                cmd2061Request(iotFrame);
                 break;
             case "2062":
                 System.out.println(ConcentratorCommand.cmd2062_name);
-                cmd2062Request(command);
+                cmd2062Request(iotFrame);
                 break;
             default:
                 log.info("something wrong, get unrecognized CONTROL CODE:" + ccString);
@@ -770,36 +797,33 @@ public class ResponderConcentrator implements Serializable {
     }
 
 
-    private void cmd2002Request(byte[] command) {
-        IotFrame receivedFrame = new IotFrame(command);
+    private void cmd2002Request(IotFrame iotFrame) {
         DirectionResponseFlag responseFlag = new DirectionResponseFlag(new byte[]{0x00, 0x01});
         ResponseCode responseCode = new ResponseCode(ResponseCode.SUCCESS);
-        DataContentField dataContentField = receivedFrame.getDataField().getDataContentField();
+        DataContentField dataContentField = iotFrame.getDataField().getDataContentField();
         DataField dataField = new DataField(responseCode, dataContentField);
-        IotFrame sendingFrame = new IotFrame(receivedFrame.getControlCode(), responseFlag, receivedFrame.getSsid(), receivedFrame.getMid(), dataField);
+        IotFrame sendingFrame = new IotFrame(iotFrame.getControlCode(), responseFlag, iotFrame.getSsid(), iotFrame.getMid(), dataField);
         returnByte = sendingFrame.dataFrame;
     }
 
-    private void cmd2003Request(byte[] command) {
-        IotFrame receivedFrame = new IotFrame(command);
+    private void cmd2003Request(IotFrame iotFrame) {
         DirectionResponseFlag responseFlag = new DirectionResponseFlag(new byte[]{0x00, 0x01});
         ResponseCode responseCode = new ResponseCode(ResponseCode.SUCCESS);
-        DataContentField dataContentField = receivedFrame.getDataField().getDataContentField();
+        DataContentField dataContentField = iotFrame.getDataField().getDataContentField();
         DataField dataField = new DataField(responseCode, dataContentField);
-        IotFrame sendingFrame = new IotFrame(receivedFrame.getControlCode(), responseFlag, receivedFrame.getSsid(), receivedFrame.getMid(), dataField);
+        IotFrame sendingFrame = new IotFrame(iotFrame.getControlCode(), responseFlag, iotFrame.getSsid(), iotFrame.getMid(), dataField);
         returnByte = sendingFrame.dataFrame;
     }
 
-    private void cmd2004Request(byte[] command,String ip,int port) {
-        IotFrame receivedFrame = new IotFrame(command);
+    private void cmd2004Request(IotFrame iotFrame, String ip, int port) {
         DirectionResponseFlag responseFlag = new DirectionResponseFlag(new byte[]{0x00, 0x01});
         ResponseCode responseCode = new ResponseCode(ResponseCode.SUCCESS);
-        DataContentField dataContentField = receivedFrame.getDataField().getDataContentField();
+        DataContentField dataContentField = iotFrame.getDataField().getDataContentField();
         DataField dataField = new DataField(responseCode, dataContentField);
-        IotFrame sendingFrame = new IotFrame(receivedFrame.getControlCode(), responseFlag, receivedFrame.getSsid(), receivedFrame.getMid(), dataField);
+        IotFrame sendingFrame = new IotFrame(iotFrame.getControlCode(), responseFlag, iotFrame.getSsid(), iotFrame.getMid(), dataField);
         returnByte = sendingFrame.dataFrame;
 
-        opConcentratorInfo(receivedFrame.getSsid().getSubStationIdStr().substring(4,14),ip,port);
+        opConcentratorInfo(iotFrame.getSsid().getSubStationIdStr().substring(4, 14), ip, port);
     }
 
     private void opConcentratorInfo(String id, String ip, int port) {
@@ -828,16 +852,15 @@ public class ResponderConcentrator implements Serializable {
         }
     }
 
-    private void cmd2061Request(byte[] command) {
-        IotFrame receivedFrame = new IotFrame(command);
+    private void cmd2061Request(IotFrame iotFrame) {
         DirectionResponseFlag responseFlag = new DirectionResponseFlag(new byte[]{0x00, 0x01});
         ResponseCode responseCode = new ResponseCode(ResponseCode.SUCCESS);
-        byte[] receivedContentBytes = receivedFrame.getDataField().getDataContentField().getDataContent();
+        byte[] receivedContentBytes = iotFrame.getDataField().getDataContentField().getDataContent();
         byte[] backContentBytes = new byte[10];
         System.arraycopy(receivedContentBytes, 0, backContentBytes, 0, backContentBytes.length);
         DataContentField dataContentField = new DataContentField(backContentBytes);
         DataField dataField = new DataField(responseCode, dataContentField);
-        IotFrame sendingFrame = new IotFrame(receivedFrame.getControlCode(), responseFlag, receivedFrame.getSsid(), receivedFrame.getMid(), dataField);
+        IotFrame sendingFrame = new IotFrame(iotFrame.getControlCode(), responseFlag, iotFrame.getSsid(), iotFrame.getMid(), dataField);
         returnByte = sendingFrame.dataFrame;
 
         int pos = 0;
@@ -845,7 +868,7 @@ public class ResponderConcentrator implements Serializable {
         byte[] concentratorIdBytes = new byte[5];
         System.arraycopy(contentBytes, pos, concentratorIdBytes, 0, concentratorIdBytes.length);
         pos += 5;
-        String concentratorId = Tools.Bytes2HexString(concentratorIdBytes,concentratorIdBytes.length);
+        String concentratorId = Tools.Bytes2HexString(concentratorIdBytes, concentratorIdBytes.length);
 
         byte[] collectorIdBytes = new byte[5];
         System.arraycopy(contentBytes, pos, collectorIdBytes, 0, collectorIdBytes.length);
@@ -865,24 +888,23 @@ public class ResponderConcentrator implements Serializable {
 
         byte[] exceptionBytes = new byte[4];
         System.arraycopy(contentBytes, pos, exceptionBytes, 0, exceptionBytes.length);
-        pos+=4;
-        String exceptionStr = Tools.Bytes2HexString(exceptionBytes,exceptionBytes.length);
+        pos += 4;
+        String exceptionStr = Tools.Bytes2HexString(exceptionBytes, exceptionBytes.length);
 
         //保存数据库
-        opConcentratorException(concentratorId,exceptionStr,TimeTag.getStringDate(date));
+        opConcentratorException(concentratorId, exceptionStr, TimeTag.getStringDate(date));
 
     }
 
-    private void cmd2062Request(byte[] command) {
-        IotFrame receivedFrame = new IotFrame(command);
+    private void cmd2062Request(IotFrame iotFrame) {
         DirectionResponseFlag responseFlag = new DirectionResponseFlag(new byte[]{0x00, 0x01});
         ResponseCode responseCode = new ResponseCode(ResponseCode.SUCCESS);
-        byte[] receivedContentBytes = receivedFrame.getDataField().getDataContentField().getDataContent();
+        byte[] receivedContentBytes = iotFrame.getDataField().getDataContentField().getDataContent();
         byte[] backContentBytes = new byte[17];
         System.arraycopy(receivedContentBytes, 0, backContentBytes, 0, backContentBytes.length);
         DataContentField dataContentField = new DataContentField(backContentBytes);
         DataField dataField = new DataField(responseCode, dataContentField);
-        IotFrame sendingFrame = new IotFrame(receivedFrame.getControlCode(), responseFlag, receivedFrame.getSsid(), receivedFrame.getMid(), dataField);
+        IotFrame sendingFrame = new IotFrame(iotFrame.getControlCode(), responseFlag, iotFrame.getSsid(), iotFrame.getMid(), dataField);
         returnByte = sendingFrame.dataFrame;
 
 
@@ -899,7 +921,7 @@ public class ResponderConcentrator implements Serializable {
         byte[] meterIdBytes = new byte[7];
         System.arraycopy(contentBytes, pos, meterIdBytes, 0, meterIdBytes.length);
         pos += 7;
-        String meterId = Tools.Bytes2HexString(meterIdBytes,meterIdBytes.length);
+        String meterId = Tools.Bytes2HexString(meterIdBytes, meterIdBytes.length);
 
         byte[] dateBytes = new byte[7];
         System.arraycopy(contentBytes, pos, dateBytes, 0, dateBytes.length);
@@ -915,11 +937,11 @@ public class ResponderConcentrator implements Serializable {
 
         byte[] exceptionBytes = new byte[4];
         System.arraycopy(contentBytes, pos, exceptionBytes, 0, exceptionBytes.length);
-        pos+=4;
-        String exceptionStr = Tools.Bytes2HexString(exceptionBytes,exceptionBytes.length);
+        pos += 4;
+        String exceptionStr = Tools.Bytes2HexString(exceptionBytes, exceptionBytes.length);
 
         //保存数据库
-        opMeterException(meterId,exceptionStr,TimeTag.getStringDate(date));
+        opMeterException(meterId, exceptionStr, TimeTag.getStringDate(date));
     }
 
     //存表异常数据
@@ -940,6 +962,7 @@ public class ResponderConcentrator implements Serializable {
         }
         return vo;
     }
+
     //存集中器异常数据
     private ConcentratorExceptionVo opConcentratorException(String concentratorId, String exceptionId, String dataDate) {
         ConcentratorExceptionVo vo = new ConcentratorExceptionVo();
@@ -968,6 +991,7 @@ public class ResponderConcentrator implements Serializable {
      * @return
      */
     public boolean isPair(byte[] send, byte[] receive) {
+        if (send == null) return false;
         byte[] sendMsgId = new byte[7];
         System.arraycopy(send, 14, sendMsgId, 0, 7);
         byte[] receiveMsgId = new byte[7];

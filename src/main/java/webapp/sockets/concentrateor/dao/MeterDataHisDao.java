@@ -4,6 +4,7 @@ package webapp.sockets.concentrateor.dao;
 import org.apache.log4j.Logger;
 import webapp.db.ConnectionPool;
 import webapp.db.ConnectionPoolImpl;
+import webapp.dbcp.DbcpProvider;
 import webapp.sockets.concentrateor.dao.vo.MeterDataVo;
 import webapp.sockets.util.TimeTag;
 
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 public class MeterDataHisDao {
 
     private static Logger log = Logger.getLogger(MeterDataHisDao.class);
-    ConnectionPool pool = new ConnectionPoolImpl();
+//    ConnectionPool pool = new ConnectionPoolImpl();
 
     public enum HisType{
         Month,
@@ -46,7 +47,8 @@ public class MeterDataHisDao {
         try{
             StringBuffer sql = new StringBuffer();
             sql.append("select * from meter_data_his where meter_id = ? and type_id = ? order by create_date desc");
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             ps = conn.prepareStatement(sql.toString());
             ps.setString(1,meterId);
             ps.setInt(2,type);
@@ -84,7 +86,8 @@ public class MeterDataHisDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn=null;
                 }
             }
@@ -115,7 +118,8 @@ public class MeterDataHisDao {
         Connection conn = null;
         PreparedStatement ps = null;
         try{
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             StringBuffer sql = new StringBuffer();
             sql.append("insert into meter_data_his (id, meter_id, flow, type_id, data_date, create_date)");
             sql.append("values(?,?,?,?,?,?)");
@@ -147,7 +151,8 @@ public class MeterDataHisDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn = null;
                 }
             }

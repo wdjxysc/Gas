@@ -67,8 +67,4 @@ public class MeterDataVo {
     public void setCreateDate(String createDate) {
         this.createDate = createDate;
     }
-
-    public final int ValveStateClose = 0;
-    public final int ValveStateOpen = 1;
-    public final int ValveStateError = 2;
 }

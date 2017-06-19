@@ -68,7 +68,7 @@
                 '<td class="meter-id" style="text-align: center" onclick="concentratorIdOnClick(this)"> <a>' + concentrator.concentratorId + '</a></td>' +
                 '<td style="align-content: center">' +
                 '<input class="btn btn-primary" style="margin-right: 5px" type="button" value="集抄" onclick="groupRead(this)">' +
-                '<input class="btn btn-primary" style="margin-right: 5px" type="button" value="设置" onclick="settings(this)">' +
+                '<input class="btn btn-primary" style="margin-right: 5px" type="button" value="刷新下级表" onclick="refreshSubMeter(this)">' +
                 '<td class="online" style="text-align: center" >' + online + '</td>' +
                 '</tr>';
             $('#meter-list').append(newRow);
@@ -90,7 +90,7 @@
                 if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                     let resultJson = JSON.parse(xmlhttp.responseText);
                     if (resultJson['success'] == false) {
-                        alert('失败: ▲原因---' + resultJson['err_msg']);
+                        alert('失败: ▲原因---' + resultJson['back_code'] +"---"+ resultJson['err_msg']);
                     } else if (resultJson['success'] == true) {
                         alert('成功');
                     }
@@ -106,6 +106,27 @@
             let concentratorId = obj.innerText;
             console.log(concentratorId);
             window.location.href = "concentratorsettings.html?concentratorId=" + concentratorId;
+        }
+
+        function refreshSubMeter(obj){
+            let parent = obj.parentNode.parentNode;
+            let child = parent.getElementsByClassName('meter-id')[0];
+            console.log(child);
+            let meterId = child.innerText;
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    let resultJson = JSON.parse(xmlhttp.responseText);
+                    if (resultJson['success'] == false) {
+                        alert('失败: ▲原因---' + resultJson['back_code'] +"---"+ resultJson['err_msg']);
+                    } else if (resultJson['success'] == true) {
+                        alert('成功');
+                    }
+                    console.log(resultJson);
+                }
+            };
+
+            xmlhttp.open("GET", "concentratorSocket/refreshSubMeter?concentratorId=" + meterId, true);
+            xmlhttp.send();
         }
 
 

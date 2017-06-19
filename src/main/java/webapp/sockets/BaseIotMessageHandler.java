@@ -1,10 +1,7 @@
 package webapp.sockets;
 
 import org.apache.log4j.Logger;
-import webapp.sockets.iotmeter.frame.ReceivedFrame;
-import webapp.sockets.iotmeter.frame.ResponderIotMeter;
 import webapp.sockets.util.Protocol;
-import webapp.sockets.util.Tools;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,7 +67,9 @@ public class BaseIotMessageHandler implements Runnable {
                 //若设定超时时间大于0（默认为0），且超时还未接收任何数据 关闭当前socket连接
                 if (getMsgTimeout > 0) {
                     if ((new Date()).getTime() - lastReceiveDataTime.getTime() >= getMsgTimeout) {
-                        closeSocket();
+                        log.info("超时未接收客户端数据，关闭socket");
+                        socket.close();
+                        release();
                         break;
                     }
                 }
@@ -93,49 +92,54 @@ public class BaseIotMessageHandler implements Runnable {
                     continue;
                 }
 
-                byte[] dataStr = new byte[i];
+                byte[] dataFirstPiece = new byte[i];
 
-                int read = inputStream.read(dataStr);
+                int read = inputStream.read(dataFirstPiece);
                 /* Frame Header */
-                for (i = 0; i < dataStr.length; i++) {
-                    if (dataStr[i] == 0x68) {
+                for (i = 0; i < dataFirstPiece.length; i++) {
+                    if (dataFirstPiece[i] == 0x68) {
+                        log.info("接收到数据头 0x68");
                         break;
                     }
                 }
 
-                k = (dataStr.length - i);
+                k = (dataFirstPiece.length - i);
                 /*	68 20 00 */
                 if (k < 3) {
                     continue;
                 }
-                length = dataStr[i + 2] & 0xff;
+                length = dataFirstPiece[i + 2] & 0xff;
 
                 length = (length << 8);
 
-                length += dataStr[i + 1] & 0xff;
+                length += dataFirstPiece[i + 1] & 0xff;
+                log.info("数据总长度-----" + length);
 
                 n = k;
 
                 for (; n < length; ) {
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     n = inputStream.available();
                     n += k;
-                    if (++ucTmrCnt > 19)
+                    log.info("available" + n);
+                    //集中器每包数据发送间隔大约4-5s 超时时间设为6s
+                    if (++ucTmrCnt > 40)
                         //timeout
                         break;
                 }
 
                 if (n < length) {
+                    log.info("数据未完全接收，舍弃");
                     continue;
                 }
 
                 byte[] ucArrDat = new byte[n];
 
-                System.arraycopy(dataStr, i, ucArrDat, 0, k);
+                System.arraycopy(dataFirstPiece, i, ucArrDat, 0, k);
 
                 if (n > k) {
 
@@ -158,18 +162,24 @@ public class BaseIotMessageHandler implements Runnable {
 
                 log.info("get " + read + " bytes");
                 log.info("Message get from devices: " + Protocol.getInstance().hexToHexString(ucArrDat));
-
+//                log.info("接收到数据，更新时间");
                 try {
+                    lastReceiveDataTime = new Date();//接收到数据 重置该时间
                     messageHandler(ucArrDat);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
-
             }
 
+            log.info(this.hashCode() + "----线程结束");
         } catch (IOException e) {
             e.printStackTrace();
-            closeSocket();
+            try {
+                socket.close();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+            release();
         }
     }
 
@@ -188,18 +198,12 @@ public class BaseIotMessageHandler implements Runnable {
     /**
      * 关闭当前socket连接
      */
-    public void closeSocket() {
-        try {
-            socket.close();
-            isClose = true;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void release() {
+        isClose = true;
 
         BaseIotServer.removeDeviceFromOnlineList(socket);
-        log.info("关闭连接:" + socket.getInetAddress() + ":" + socket.getPort() + "-->连接数：" + BaseIotServer.socketArrayList.size());
+        log.info("释放连接:" + socket.getInetAddress() + ":" + socket.getPort() + "-->连接数：" + BaseIotServer.socketArrayList.size());
         socket = null;
-
     }
 
 

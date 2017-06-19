@@ -1,5 +1,6 @@
 package webapp.sockets.concentrateor.frame;
 
+import org.apache.log4j.Logger;
 import webapp.sockets.concentrateor.IotConcentratorMessageHandler;
 import webapp.sockets.concentrateor.IotConcentratorServer;
 import webapp.sockets.concentrateor.dao.ConcentratorCollectorMeterMapDao;
@@ -9,7 +10,6 @@ import webapp.sockets.concentrateor.field.datafield.ContentHeartbeat;
 import webapp.sockets.concentrateor.field.datafield.DataContentField;
 import webapp.sockets.util.Tools;
 
-import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.Socket;
@@ -24,12 +24,15 @@ import java.util.HashMap;
  * Created by Administrator on 2017/2/20.
  */
 public class RequesterConcentrator implements Serializable {
+    Logger logger = Logger.getLogger(RequesterConcentrator.class);
     private static RequesterConcentrator requesterConcentrator;
 
     /**
      * 直接对rf表操作耗时较长 超时时间设为30s
      */
     private int requestMeterTimeout = 30000;
+
+    private int requestConcentratorTimeout = 10000;
 
     private RequesterConcentrator() {
 
@@ -78,7 +81,7 @@ public class RequesterConcentrator implements Serializable {
         HashMap<String, Object> map = new HashMap<String, Object>();
 
         IotConcentratorMessageHandler handler = (IotConcentratorMessageHandler) IotConcentratorServer.getMessageHandlerByDeviceId(deviceId);
-        if (handler!= null && handler.socket != null) {
+        if (handler != null && handler.socket != null) {
             try {
                 map = handler.syncsSendMessage(sendData, timeout);
 
@@ -100,174 +103,187 @@ public class RequesterConcentrator implements Serializable {
             map.put(ResponderConcentrator.KEY_ERR_MESSAGE, "集中器离线");
         }
 
+        logger.info(map);
         return map;
     }
 
     /**
      * 2001 主站通信测试
+     *
      * @param concentratorId
      * @return
      */
-    public HashMap testConnect2001(String concentratorId){
+    public HashMap testConnect2001(String concentratorId) {
         byte[] sendData = getConnectTestCmd(concentratorId);
 
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
     /**
      * 2011 集中器心跳周期设置
+     *
      * @param concentratorId
      * @param heartbeat
      * @return
      */
-    public HashMap setConcentratorHeartbeat(String concentratorId,int heartbeat){
+    public HashMap setConcentratorHeartbeat(String concentratorId, int heartbeat) {
         byte[] sendData = getSetConcentratorHeartbeatCmd(concentratorId, heartbeat);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
     /**
      * 2012 集中器心跳周期查询
+     *
      * @param concentratorId
      * @return
      */
-    public HashMap readConcentratorHeartbeat(String concentratorId){
+    public HashMap readConcentratorHeartbeat(String concentratorId) {
         byte[] sendData = getReadConcentratorHeartbeatCmd(concentratorId);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
     /**
      * 2013 集中器集抄时间设置
+     *
      * @param concentratorId
      * @param groupReadFlag
      * @return
      */
-    public HashMap setConcentratorGroupReadTime(String concentratorId, GroupReadFlag groupReadFlag){
+    public HashMap setConcentratorGroupReadTime(String concentratorId, GroupReadFlag groupReadFlag) {
         byte[] sendData = getSetConcentratorGroupReadCmd(concentratorId, groupReadFlag);
-        return operation("0000" + concentratorId, sendData, requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
     /**
      * 2014 集中器集抄时间查询
+     *
      * @param concentratorId
      * @return
      */
-    public HashMap readConcentratorGroupReadTime(String concentratorId){
+    public HashMap readConcentratorGroupReadTime(String concentratorId) {
         byte[] sendData = getReadConcentratorGroupReadTimeCmd(concentratorId);
-        return operation("0000" + concentratorId, sendData, requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
     /**
      * 2015 集中器时钟设置
+     *
      * @param concentratorId
      * @param date
      * @return
      */
-    public HashMap setConcentratorTime(String concentratorId, Date date){
-        byte[] sendData = getSetConcentratorTimeCmd(concentratorId,date);
-        return  operation("0000" + concentratorId,sendData,requestMeterTimeout);
+    public HashMap setConcentratorTime(String concentratorId, Date date) {
+        byte[] sendData = getSetConcentratorTimeCmd(concentratorId, date);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
     /**
      * 2016 集中器时钟查询
+     *
      * @param concentratorId
      * @return
      */
-    public HashMap readConcentratorTime(String concentratorId){
+    public HashMap readConcentratorTime(String concentratorId) {
         byte[] sendData = getReadConcentratorGroupReadTimeCmd(concentratorId);
-        return  operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
     /**
      * 2021 表具唤醒周期设置
+     *
      * @param meterId
      * @return
      */
-    public HashMap setMeterAwakeCircleTime(String meterId, int time){
-        byte[] sendData = getSetMeterAwakeTimeCmd(meterId,time);
+    public HashMap setMeterAwakeCircleTime(String meterId, int time) {
+        byte[] sendData = getSetMeterAwakeTimeCmd(meterId, time);
         String concentratorId = getConcentratorIdByMeterId(meterId);
-        return  operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestMeterTimeout);
     }
 
     /**
      * 2022 表具唤醒周期设置
+     *
      * @param meterId
      * @return
      */
-    public HashMap readMeterAwakeCircleTime(String meterId, int time){
-        byte[] sendData = getSetMeterAwakeTimeCmd(meterId,time);
+    public HashMap readMeterAwakeCircleTime(String meterId, int time) {
+        byte[] sendData = getSetMeterAwakeTimeCmd(meterId, time);
         String concentratorId = getConcentratorIdByMeterId(meterId);
-        return  operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestMeterTimeout);
     }
 
 
     /**
      * 2023 表具时钟设置
+     *
      * @param meterId
      * @param date
      * @return
      */
-    public HashMap setMeterTime(String meterId, Date date){
-        byte[] sendData = getSetMeterTimeCmd(meterId,date);
+    public HashMap setMeterTime(String meterId, Date date) {
+        byte[] sendData = getSetMeterTimeCmd(meterId, date);
         String concentratorId = getConcentratorIdByMeterId(meterId);
-        return  operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestMeterTimeout);
     }
 
     /**
      * 2024 表具时钟查询
+     *
      * @param meterId
      * @return
      */
-    public HashMap readMeterTime(String meterId){
+    public HashMap readMeterTime(String meterId) {
         byte[] sendData = getReadConcentratorGroupReadTimeCmd(meterId);
         String concentratorId = getConcentratorIdByMeterId(meterId);
-        return  operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestMeterTimeout);
     }
 
-    public HashMap addSubCollector(String concentratorId, String collector){
-        byte[] sendData = getAddCollectorCmd(concentratorId,collector);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+    public HashMap addSubCollector(String concentratorId, String collector) {
+        byte[] sendData = getAddCollectorCmd(concentratorId, collector);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
-    public HashMap removeSubCollector(String concentratorId, String collector){
-        byte[] sendData = getRemoveCollectorCmd(concentratorId,collector);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+    public HashMap removeSubCollector(String concentratorId, String collector) {
+        byte[] sendData = getRemoveCollectorCmd(concentratorId, collector);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
-    public HashMap addSubMeter(String concentratorId, String meterId){
-        byte[] sendData = getAddCollectorCmd(concentratorId,meterId);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+    public HashMap addSubMeter(String concentratorId, String meterId) {
+        byte[] sendData = getAddMeterCmd(concentratorId,"0000000000", meterId);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
-    public HashMap removeSubMeter(String concentratorId, String meterId){
-        byte[] sendData = getRemoveCollectorCmd(concentratorId,meterId);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+    public HashMap removeSubMeter(String concentratorId, String meterId) {
+        byte[] sendData = getRemoveMeterCmd(concentratorId,"0000000000", meterId);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
-    public HashMap readSubCollector(String concentratorId){
+    public HashMap readSubCollector(String concentratorId) {
         byte[] sendData = getQueryCollectorCmd(concentratorId);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
-    public HashMap readSubMeter(String concentratorId,String collectorId){
-        byte[] sendData = getQueryMeterCmd(concentratorId,collectorId);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+    public HashMap readSubMeter(String concentratorId, String collectorId) {
+        byte[] sendData = getQueryMeterCmd(concentratorId, collectorId);
+        return operation("0000" + concentratorId, sendData, requestMeterTimeout);//大量下级表时耗时较长
     }
 
-    public HashMap readGroupReadData(String concentratorId){
-        byte[] sendData = getReadConcentratorGroupReadTimeCmd(concentratorId);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+    public HashMap readGroupReadData(String concentratorId, Date date) {
+        logger.info("集抄------" + concentratorId);
+        byte[] sendData = getReadGroupMeterDataCmd(concentratorId, date);
+        return operation("0000" + concentratorId, sendData, 40000);//大量下级表时，表数据多，耗时较长
     }
 
-    public HashMap readMeterHisMonthData(String meterId){
+    public HashMap readMeterHisMonthData(String meterId) {
         byte[] sendData = getReadMeterHistoryMonthCmd(meterId);
         String concentratorId = getConcentratorIdByMeterId(meterId);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
-    public HashMap readMeterHisDayData(String meterId){
+    public HashMap readMeterHisDayData(String meterId) {
         byte[] sendData = getReadMeterHistoryDayCmd(meterId);
         String concentratorId = getConcentratorIdByMeterId(meterId);
-        return operation("0000" + concentratorId,sendData,requestMeterTimeout);
+        return operation("0000" + concentratorId, sendData, requestConcentratorTimeout);
     }
 
 
@@ -311,7 +327,7 @@ public class RequesterConcentrator implements Serializable {
     }
 
 
-    public HashMap readMeterValveState(String meterId){
+    public HashMap readMeterValveState(String meterId) {
         byte[] sendData = getMeterValveStateCmd(meterId);
         String concentratorId = getConcentratorIdByMeterId(meterId);
         return operation("0000" + concentratorId, sendData, requestMeterTimeout);
@@ -438,6 +454,7 @@ public class RequesterConcentrator implements Serializable {
     /**
      * 2015
      * 设置集中器时钟
+     *
      * @param concentratorId 集中器id
      * @param date           时间
      * @return
@@ -562,7 +579,7 @@ public class RequesterConcentrator implements Serializable {
 
     /**
      * 2034
-     * 集中器删除下级采集器
+     * 集中器删除下级智能表
      *
      * @param concentratorId 集中器id
      * @param collectorId    采集器id
@@ -625,7 +642,7 @@ public class RequesterConcentrator implements Serializable {
      * @param date           集抄时间
      * @return
      */
-    private byte[] getRemoveMeterCmd(String concentratorId, Date date) {
+    private byte[] getReadGroupMeterDataCmd(String concentratorId, Date date) {
         CtrlCode ctrlCode = new CtrlCode(CtrlCode.CMD_READ_ALL_METER_DATA);
         DirectionResponseFlag directionResponseFlag = new DirectionResponseFlag((byte) 0x00, (byte) 0x00);
         SubStationID subStationID = new SubStationID("0000" + concentratorId);
@@ -640,6 +657,7 @@ public class RequesterConcentrator implements Serializable {
     /**
      * 2042
      * 单表实时抄表
+     *
      * @param meterId
      * @return
      */
@@ -659,6 +677,7 @@ public class RequesterConcentrator implements Serializable {
     /**
      * 2043
      * 单表月用量历史查询
+     *
      * @param meterId
      * @return
      */
@@ -678,6 +697,7 @@ public class RequesterConcentrator implements Serializable {
     /**
      * 2044
      * 单表日用量历史查询
+     *
      * @param meterId
      * @return
      */
@@ -765,7 +785,7 @@ public class RequesterConcentrator implements Serializable {
         ConcentratorCollectorMeterMapDao dao = new ConcentratorCollectorMeterMapDao();
 
         ArrayList<ConcentratorCollectorMeterMapVo> vos = dao.queryMapByMeterId(meterId);
-        if(vos.size() >0){
+        if (vos.size() > 0) {
             concentratorId = vos.get(0).getConcentratorId();
         }
 
@@ -784,7 +804,7 @@ public class RequesterConcentrator implements Serializable {
         ConcentratorCollectorMeterMapDao dao = new ConcentratorCollectorMeterMapDao();
 
         ArrayList<ConcentratorCollectorMeterMapVo> vos = dao.queryMapByMeterId(meterId);
-        if(vos.size() >0){
+        if (vos.size() > 0) {
             collectorId = vos.get(0).getConcentratorId();
         }
 

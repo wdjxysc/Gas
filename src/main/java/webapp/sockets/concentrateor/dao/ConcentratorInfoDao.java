@@ -3,6 +3,7 @@ package webapp.sockets.concentrateor.dao;
 import org.apache.log4j.Logger;
 import webapp.db.ConnectionPool;
 import webapp.db.ConnectionPoolImpl;
+import webapp.dbcp.DbcpProvider;
 import webapp.sockets.concentrateor.dao.vo.ConcentratorInfoVo;
 import webapp.sockets.util.TimeTag;
 
@@ -17,7 +18,7 @@ import java.util.ArrayList;
  */
 public class ConcentratorInfoDao {
     private static Logger log = Logger.getLogger(ConcentratorInfoDao.class);
-    ConnectionPool pool = new ConnectionPoolImpl();
+//    ConnectionPool pool = new ConnectionPoolImpl();
 
     /**
      * 查询设备编号
@@ -33,7 +34,8 @@ public class ConcentratorInfoDao {
         try{
             StringBuffer sql = new StringBuffer();
             sql.append("select count(*) from concentrator_info where concentrator_id = ? order by create_date desc");
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             ps = conn.prepareStatement(sql.toString());
             ps.setString(1, concentratorId);
             rs = ps.executeQuery();
@@ -65,7 +67,8 @@ public class ConcentratorInfoDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn=null;
                 }
             }
@@ -92,7 +95,8 @@ public class ConcentratorInfoDao {
         try{
             StringBuffer sql = new StringBuffer();
             sql.append("select * from concentrator_info");
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             ps = conn.prepareStatement(sql.toString());
             rs = ps.executeQuery();
             while (rs.next()) {
@@ -128,7 +132,8 @@ public class ConcentratorInfoDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn=null;
                 }
             }
@@ -150,7 +155,8 @@ public class ConcentratorInfoDao {
         Connection conn = null;
         PreparedStatement ps = null;
         try{
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             StringBuffer sql = new StringBuffer();
             sql.append("insert into concentrator_info (id,concentrator_id,ip,port,last_connect_date, create_date,");
             sql.append("update_date) ");
@@ -185,7 +191,8 @@ public class ConcentratorInfoDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn = null;
                 }
             }
@@ -206,7 +213,8 @@ public class ConcentratorInfoDao {
         Connection conn = null;
         PreparedStatement ps = null;
         try{
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             StringBuffer sql = new StringBuffer();
             sql.append("update concentrator_info set last_connect_date = ?,ip=?,port=? where concentrator_id = ?");
             ps = conn.prepareStatement(sql.toString());
@@ -235,7 +243,8 @@ public class ConcentratorInfoDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn = null;
                 }
             }

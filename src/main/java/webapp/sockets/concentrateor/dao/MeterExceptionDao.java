@@ -4,6 +4,7 @@ package webapp.sockets.concentrateor.dao;
 import org.apache.log4j.Logger;
 import webapp.db.ConnectionPool;
 import webapp.db.ConnectionPoolImpl;
+import webapp.dbcp.DbcpProvider;
 import webapp.sockets.concentrateor.dao.vo.MeterExceptionVo;
 import webapp.sockets.util.TimeTag;
 
@@ -18,7 +19,7 @@ import java.util.ArrayList;
  */
 public class MeterExceptionDao {
     private static Logger log = Logger.getLogger(MeterExceptionDao.class);
-    ConnectionPool pool = new ConnectionPoolImpl();
+//    ConnectionPool pool = new ConnectionPoolImpl();
 
     /**
      * 查询表的异常信息
@@ -36,7 +37,8 @@ public class MeterExceptionDao {
         StringBuffer sql = new StringBuffer();
         sql.append("select id, meter_id, exception_code, data_date, create_date from meter_exception order by create_date desc;");
         try {
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             ps = conn.prepareStatement(sql.toString());
             rs = ps.executeQuery();
 
@@ -70,7 +72,8 @@ public class MeterExceptionDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn = null;
                 }
             } catch (SQLException e) {
@@ -90,7 +93,8 @@ public class MeterExceptionDao {
         sql.append("insert into meter_exception (id,meter_id,exception_code,data_date," +
                 "create_date) values (?,?,?,?,?)");
         try {
-            conn = pool.getConnection();
+//            conn = pool.getConnection();
+            conn = DbcpProvider.getDataSource().getConnection();
             ps = conn.prepareStatement(sql.toString());
             ps.setString(1, meterExceptionVo.getId());
             ps.setString(2, meterExceptionVo.getMeterId());
@@ -114,7 +118,8 @@ public class MeterExceptionDao {
             }
             try {
                 if (conn != null) {
-                    pool.releaseConnection(conn);
+//                    pool.releaseConnection(conn);
+                    conn.close();
                     conn = null;
                 }
             } catch (SQLException e) {

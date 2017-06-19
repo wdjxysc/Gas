@@ -1,6 +1,7 @@
 package webapp.sockets.concentrateor.frame;
 
 
+import org.apache.log4j.Logger;
 import webapp.sockets.concentrateor.encode.RTHCDecoder;
 import webapp.sockets.concentrateor.field.*;
 import webapp.sockets.util.HexToInt;
@@ -10,6 +11,8 @@ import webapp.sockets.util.StringTool;
 import java.io.Serializable;
 
 public class IotFrame implements Serializable {
+    Logger logger = Logger.getLogger(IotFrame.class);
+
     private static final long serialVersionUID = 1L;
     /*** 起始符*/
     private byte[] beginByte = new byte[]{0x68};
@@ -43,6 +46,7 @@ public class IotFrame implements Serializable {
      * @param frame
      */
     public IotFrame(byte[] frame) {
+
         RTHCDecoder decoder = RTHCDecoder.getInstance();
         dataFrame = frame;
         lengthOfFrame = new FrameLength((byte[]) (decoder.getLogicFieldByteArray(frame, 2)));
@@ -54,6 +58,8 @@ public class IotFrame implements Serializable {
         dataField = new DataField((byte[]) decoder.getLogicFieldByteArray(frame, 8));
         dataField = new DataField(dataField.getDataField(), drf);
         crcCode = new CrcCode((byte[]) decoder.getLogicFieldByteArray(frame, 9));
+
+        logger.info("分解报文：" + controlCode.getControlCodeString());
     }
 
 
@@ -71,7 +77,7 @@ public class IotFrame implements Serializable {
                     SubStationID subStationID,
                     MessageID messageID,
                     DataField dataField) {
-
+        logger.info("组装报文：" + ctrlCode.getControlCodeString());
         int frameTotalLength = 3 * 7 + 2 + 2 + 1 + dataField.getDataField().length;
         try {
             lengthOfFrame = new FrameLength(frameTotalLength);

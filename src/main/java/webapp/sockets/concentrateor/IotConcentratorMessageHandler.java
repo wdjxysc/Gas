@@ -29,36 +29,43 @@ public class IotConcentratorMessageHandler extends BaseIotMessageHandler {
 
     @Override
     public void messageHandler(byte[] message) {
-        String messageStr = Protocol.getInstance().hexToHexString(message);
-        ResponderConcentrator responder = new ResponderConcentrator(messageStr, socket.getInetAddress().getHostAddress(), socket.getPort());
-        IotFrame iotFrame = new IotFrame(message);
-        if (responder.isResponseFrame(message)) {
+        super.messageHandler(message);
+        ResponderConcentrator responder = new ResponderConcentrator(message, socket.getInetAddress().getHostAddress(), socket.getPort());
+        IotFrame iotFrame = responder.receiveIotFrame;
+        if (responder.isResponseFrame(iotFrame)) {
             //如果接收到的数据是回复帧 获取返回结果
             synchronized (lock) {
                 if (iotFrame.getControlCode().getControlCodeString().equals(CtrlCode.CMD_READ_ALL_METER_DATA)) {
 
                     byte[] contentBytes = iotFrame.getDataField().getDataContentField().getDataContent();
-                    if (contentBytes[5] == 0x01) {
-                        //最后一帧
-                        resultMap = responder.getResultHashMap();
-                        lock.notify();
-                    }
+//                    if (contentBytes[5] == 0x01) {
+//                        //最后一帧
+//                        resultMap = responder.getResultHashMap();
+//                        lock.notify();
+//                    }
+
+                    resultMap = responder.getResultHashMap();
+                    lock.notify();
 
                 } else if (iotFrame.getControlCode().getControlCodeString().equals(CtrlCode.CMD_READ_METER_HISTORY_MONTH)) {
                     byte[] contentBytes = iotFrame.getDataField().getDataContentField().getDataContent();
-                    if (contentBytes[17] == 0x01) {
-                        //最后一帧
-                        resultMap = responder.getResultHashMap();
-                        lock.notify();
-                    }
+//                    if (contentBytes[17] == 0x01) {
+//                        //最后一帧
+//                        resultMap = responder.getResultHashMap();
+//                        lock.notify();
+//                    }
+                    resultMap = responder.getResultHashMap();
+                    lock.notify();
 
                 } else if (iotFrame.getControlCode().getControlCodeString().equals(CtrlCode.CMD_READ_METER_HISTORY_DAY)) {
                     byte[] contentBytes = iotFrame.getDataField().getDataContentField().getDataContent();
-                    if (contentBytes[17] == 0x01) {
-                        //最后一帧
-                        resultMap = responder.getResultHashMap();
-                        lock.notify();
-                    }
+//                    if (contentBytes[17] == 0x01) {
+//                        //最后一帧
+//                        resultMap = responder.getResultHashMap();
+//                        lock.notify();
+//                    }
+                    resultMap = responder.getResultHashMap();
+                    lock.notify();
 
                 } else {
                     if (responder.isPair(syncsSendData, message)) {
@@ -76,7 +83,7 @@ public class IotConcentratorMessageHandler extends BaseIotMessageHandler {
                 e.printStackTrace();
             }
 
-            //如果请求帧是表注册 则添加表到在线表列表
+            //如果请求帧是注册帧 则添加设备到在线设备列表
             String device = iotFrame.getSsid().getSubStationIdStr();
             String cmdIdStr = iotFrame.getControlCode().getControlCodeString();
             if (cmdIdStr.equals(CtrlCode.CMD_REGISTER)) {
